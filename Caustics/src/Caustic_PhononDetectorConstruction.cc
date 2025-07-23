@@ -152,7 +152,7 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
   G4LatticeLogical* SubstrateLogical = LM->LoadLattice(fCaWO4, "CaWO4");
   G4LatticePhysical* SubstratePhysical = new G4LatticePhysical(SubstrateLogical);
 
-  SubstratePhysical->SetMillerOrientation(0,0,1);
+  SubstratePhysical->SetMillerOrientation(1,1,1);
   LM->RegisterLattice(SubstratePhys, SubstratePhysical);
 
   // Aluminum . This is where phonon hits are registered (Bolometer)
@@ -175,7 +175,7 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
     topSurfProp = new G4CMPSurfaceProperty("TopAlSurf", 1.0, 0.0, 0.0, 0.0,
 					  	        0.9, 1.0, 0.3, 0.0);
     wallSurfProp = new G4CMPSurfaceProperty("WallSurf", 0.0, 1.0, 0.0, 0.0,
-					    	        0.0, 1.0, 0.0, 0.0);
+					    	        0.0, 1.0, 0.3, 0.0);
   }
 
   // Separate surfaces for sensors vs. bare sidewall
