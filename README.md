@@ -9,3 +9,5 @@ A repository for simulations of phonon  transport and TES response in cryogenic 
 - make the code: ``` cmake .. && cmake --build . -j6 ```
 - After it is built, for **GUI mode** run the executable directly ```./g4cmpPhononCaustics```
 - Additionally you may use the macro file to run in **batch mode** ```./g4cmpPhononCaustics ./Caustic.mac```
+
+-- a test line to understand how Git merge works . Owner teslabsinp.
