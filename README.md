@@ -10,6 +10,8 @@ A repository for simulations of phonon  transport and TES response in cryogenic 
 - After it is built, for **GUI mode** run the executable directly ```./g4cmpPhononCaustics```
 - Additionally you may use the macro file to run in **batch mode** ```./g4cmpPhononCaustics ./Caustic.mac```
 
--- a test line to understand how Git merge works . Owner teslabsinp.
--- another test line to understand how Git merge works . Owner teslabsinp.
+
+# Changes to Geant4 and/or G4CMP code 
+## G4CMP
+- Commented out the exceptions relating to **track escaped from volume** and **track inconsistent position**.
 

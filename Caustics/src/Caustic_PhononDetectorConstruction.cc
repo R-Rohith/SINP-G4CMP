@@ -175,7 +175,8 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
     topSurfProp = new G4CMPSurfaceProperty("TopAlSurf", 1.0, 0.0, 0.0, 0.0,
 					  	        0.9, 1.0, 0.3, 0.0);
     wallSurfProp = new G4CMPSurfaceProperty("WallSurf", 0.0, 1.0, 0.0, 0.0,
-					    	        0.0, 1.0, 0.0, 0.0);
+					    	        0.0, 1.0, 0.3, 0.0);
+
   }
 
   // Separate surfaces for sensors vs. bare sidewall

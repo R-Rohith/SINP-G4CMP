@@ -8,8 +8,8 @@ const double minY = -2;
 const double maxX = 2;
 const double maxY = 2;
 
- TCanvas *c1 = new TCanvas("c1","Canvas Example",200,10,600,600);
- TCanvas *c2 = new TCanvas("c2","Canvas Example",200,10,600,600);
+ TCanvas *c1 = new TCanvas("c1","Canvas Example",200,10,800,800);
+ TCanvas *c2 = new TCanvas("c2","Canvas Example",200,10,700,700);
 
 
 //---------------------------------------------------------------------------------
@@ -94,16 +94,18 @@ void TransFast_and_Slow(const TString& fileName) {
   //Get the file output from the example
   ifstream in;
   in.open(fileName);
-  TH2D *Caustics= new TH2D("Caustics","Phonon Caustics",nBinsX,minX,maxX,nBinsY,minY,maxY);
+  TH2D *Caustics= new TH2D("Caustics","Phonon Caustics;x (mm);y (mm)",nBinsX,minX,maxX,nBinsY,minY,maxY);
   Int_t nlines = 0;
   Int_t EventID=-1, TrackID=-1;
   TString Name_Phonon;
-  Double_t X_f,Y_f,Z_f,start_X,start_Y,start_Z;
-  
+  Double_t X_f,Y_f,Z_f;
+  Double_t start_X,start_Y,start_Z;
   //Read in the phonons from the file
   while (1) {
 
-     in>>EventID>>TrackID>>Name_Phonon>>X_f>>Y_f>>Z_f>>start_X>>start_Y>>start_Z;
+     in>>EventID>>TrackID>>Name_Phonon>>X_f>>Y_f>>Z_f
+     >>start_X>>start_Y>>start_Z;
+
 
      Caustics->Fill(X_f*1000,Y_f*1000);
 
@@ -116,21 +118,23 @@ void TransFast_and_Slow(const TString& fileName) {
   //c1->SetFillColor(1);
   //Caustics->SetMarkerColorAlpha(kWhite, 0.2);
  c1->cd();
- gPad->Update();
- c1->SetPad(0.05,0.05,0.1,0.1);
+// c1->SetPad(0.02,0.02,1,1);
+
  gStyle->SetPalette(1);
  gStyle->SetOptStat(0);
  Caustics->Draw("COLZ");
  gPad->Update();
  TPaletteAxis *palette = (TPaletteAxis*)Caustics->GetListOfFunctions()->FindObject("palette");
- palette->SetX1NDC(0.90);
+// palette->SetX1NDC(0.5);
  palette->SetX2NDC(0.92);
- palette->SetY1NDC(0.1);
- palette->SetY2NDC(0.9);
+// palette->SetY1NDC(0.5);
+// palette->SetY2NDC(0.5);
+ palette->SetLabelSize(0.03);
  gPad->Modified();
  gPad->Update();
- c1->SetLogz();
-  //Caustics->Draw("colz");
+ Caustics->GetYaxis()->SetTitleOffset(1.2);
+  Caustics->Draw("colz");
+
  c1->SaveAs("Both.pdf");
   //Caustics->Draw();
   in.close();

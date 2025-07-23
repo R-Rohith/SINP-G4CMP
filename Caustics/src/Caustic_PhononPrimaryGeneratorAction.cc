@@ -60,12 +60,13 @@ void Caustic_PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
   // You only need to uncomment and comment on the other fParticleGun.
   }
 
-  G4double randX,randY;
+  G4double randX,randY,randZ;
   do{
    randX=(G4UniformRand()*4-2);
    randY=(G4UniformRand()*4-2);
-  }while((randX*randX+randY*randY)>=4);
-  fParticleGun->SetParticlePosition(G4ThreeVector(randX*mm,randY*mm,0.0));
+   randZ=(G4UniformRand()*4-2);
+  }while(((randX*randX+randY*randY)>=4)||(randZ*randZ>=4));
+  fParticleGun->SetParticlePosition(G4ThreeVector(randX*mm,randY*mm,randZ*mm));
 
   fParticleGun->GeneratePrimaryVertex(anEvent);
 }
