@@ -1,3 +1,4 @@
+
 /***********************************************************************\
  * This software is licensed under the terms of the GNU General Public *
  * License version 3 or later. See G4CMP/LICENSE for the full license. *
@@ -23,15 +24,9 @@
 using namespace std;
 
 Caustic_PhononPrimaryGeneratorAction::Caustic_PhononPrimaryGeneratorAction() {
-//----When using gps as source-------
-//fParticleGun  = new G4GeneralParticleSource();
 
-//-----When using particle gun-------------
- G4int n_particle=1;
- fParticleGun=new G4ParticleGun(n_particle);
- fParticleGun->SetParticleDefinition(G4Geantino::Definition());
- fParticleGun->SetParticleMomentumDirection(G4RandomDirection());
- fParticleGun->SetParticleEnergy(0.0075*eV);
+fParticleGun  = new G4GeneralParticleSource();
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
@@ -59,14 +54,6 @@ void Caustic_PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
   // If you are interested in Longitudinal phonons.
   // You only need to uncomment and comment on the other fParticleGun.
   }
-
-  G4double randX,randY,randZ;
-  do{
-   randX=(G4UniformRand()*4-2);
-   randY=(G4UniformRand()*4-2);
-   randZ=(G4UniformRand()*4-2);
-  }while(((randX*randX+randY*randY)>=4)||(randZ*randZ>=4));
-  fParticleGun->SetParticlePosition(G4ThreeVector(randX*mm,randY*mm,randZ*mm));
 
   fParticleGun->GeneratePrimaryVertex(anEvent);
 }
