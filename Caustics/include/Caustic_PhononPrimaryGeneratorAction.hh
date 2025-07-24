@@ -28,11 +28,8 @@ public:
     virtual void GeneratePrimaries(G4Event*);
 
   private:
-//------For gps particle source-------
-//    G4GeneralParticleSource *fParticleGun;
+    G4GeneralParticleSource *fParticleGun;
 
-//------For particle gun-----------
-   G4ParticleGun *fParticleGun;
 
 };
 
