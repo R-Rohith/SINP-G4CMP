@@ -106,7 +106,6 @@ void TransFast_and_Slow(const TString& fileName) {
      in>>EventID>>TrackID>>Name_Phonon>>X_f>>Y_f>>Z_f
      >>start_X>>start_Y>>start_Z;
 
-
      Caustics->Fill(X_f*1000,Y_f*1000);
 
      if (!in.good()) break;
@@ -117,9 +116,9 @@ void TransFast_and_Slow(const TString& fileName) {
   //TCanvas *c1 = new TCanvas("c1","Canvas Example",200,10,600,480);
   //c1->SetFillColor(1);
   //Caustics->SetMarkerColorAlpha(kWhite, 0.2);
+ c1->SetLogz();
  c1->cd();
 // c1->SetPad(0.02,0.02,1,1);
-
  gStyle->SetPalette(1);
  gStyle->SetOptStat(0);
  Caustics->Draw("COLZ");
@@ -133,8 +132,9 @@ void TransFast_and_Slow(const TString& fileName) {
  gPad->Modified();
  gPad->Update();
  Caustics->GetYaxis()->SetTitleOffset(1.2);
+ Caustics->GetZaxis()->SetRangeUser(40,80);
+ Caustics->GetZaxis()->SetMoreLogLabels();
   Caustics->Draw("colz");
-
  c1->SaveAs("Both.pdf");
   //Caustics->Draw();
   in.close();
