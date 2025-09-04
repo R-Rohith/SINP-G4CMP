@@ -1,12 +1,12 @@
 //This is a root Program to Plot the Caustic Patterns from the phonon_hits.txt File
 //Function to Plot Only Phonon Caustic.
 
-const int nBinsX = 500;
-const int nBinsY = 500;
-const double minX = -2;
-const double minY = -2;
-const double maxX = 2;
-const double maxY = 2;
+const int nBinsX = 10;
+const int nBinsY = 10;
+const double minX = -2.5;
+const double minY = -2.5;
+const double maxX = 2.5;
+const double maxY = 2.5;
 
  TCanvas *c1 = new TCanvas("c1","Canvas Example",200,10,800,800);
  TCanvas *c2 = new TCanvas("c2","Canvas Example",200,10,700,700);
@@ -128,7 +128,7 @@ palette->SetX1NDC(0.88);
  palette->SetX2NDC(0.9);
  palette->SetY1NDC(0.12);
  palette->SetY2NDC(0.88);
- palette->SetLabelSize(0.05);
+ palette->SetLabelSize(0.037);
  gStyle->SetTitleFontSize(0.07);
  gPad->Modified();
  gPad->Update();
@@ -139,10 +139,12 @@ palette->SetX1NDC(0.88);
  Caustics->GetYaxis()->SetTitleOffset(1.2);
  Caustics->GetXaxis()->SetTitleOffset(1.2);
  c1->SetMargin(0.12,0.12,0.12,0.12);
- Caustics->GetZaxis()->SetRangeUser(40,80);
+// Caustics->GetZaxis()->SetOption("h");
+ Caustics->GetZaxis()->SetRangeUser(150000,220000);
  Caustics->GetZaxis()->SetMoreLogLabels();
   Caustics->Draw("colz");
- c1->SaveAs("Both.pdf");
+  Caustics->Draw("same text");
+ c1->SaveAs("special-Both.pdf");
   //Caustics->Draw();
   in.close();
 
@@ -152,7 +154,7 @@ palette->SetX1NDC(0.88);
 //Main function
 #include <iostream>
 using namespace std;
-void Caustics_Plots(TString Phonon_Name, TString fileName="phonon_hits.txt") {
+void special_Caustics_Plots(TString Phonon_Name, TString fileName="phonon_hits.txt") {
   
   TString  Phonon_Case = Phonon_Name;
   Int_t What_phonon1,What_phonon2,What_phonon3,What_phonon4;
