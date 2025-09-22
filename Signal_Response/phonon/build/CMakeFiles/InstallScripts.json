@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/opt/G4CMP/examples/phonon/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
