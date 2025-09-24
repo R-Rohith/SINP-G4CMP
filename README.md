@@ -1,7 +1,7 @@
 # SINP-G4CMP
 A repository for simulations of phonon  transport and TES response in cryogenic detectors.
 
-## How to use
+## How to use the caustics code
 - clone the repository
 - go to the directory 'Caustics': ``` cd Caustics```
 - make a `build' directory: ``` mkdir build```
@@ -13,5 +13,5 @@ A repository for simulations of phonon  transport and TES response in cryogenic 
 
 # Changes to Geant4 and/or G4CMP code 
 ## G4CMP
-- Commented out the exceptions relating to **track escaped from volume** and **track inconsistent position**.
-
+- Commented out the exceptions relating to **track escaped from volume** and **track inconsistent position**; to improve simulation time.
+- Until the main G4CMP is not corrected, switch the positions of ```forient``` and ```finverse``` in the ```G4LatticePhysical.cc```
