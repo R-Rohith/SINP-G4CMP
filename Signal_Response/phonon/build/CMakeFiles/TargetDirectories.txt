@@ -1,0 +1,8 @@
+/opt/G4CMP/examples/phonon/build/CMakeFiles/phononLib.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/g4cmpPhonon.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/edit_cache.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/rebuild_cache.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/list_install_components.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/install.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/install/local.dir
+/opt/G4CMP/examples/phonon/build/CMakeFiles/install/strip.dir
