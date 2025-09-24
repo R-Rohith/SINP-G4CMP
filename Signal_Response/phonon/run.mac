@@ -1,0 +1,15 @@
+# run.mac — phonon-only, headless
+
+/control/verbose 0
+/run/verbose 0
+
+# Disable visualization so Geant4 won't try to open an X viewer
+/vis/disable
+
+# G4CMP production toggles (your C++ primary does the generation)
+/g4cmp/producePhonons 1
+/g4cmp/produceCharges 0
+
+/run/initialize
+#/run/printProgress 100
+/run/beamOn 1
