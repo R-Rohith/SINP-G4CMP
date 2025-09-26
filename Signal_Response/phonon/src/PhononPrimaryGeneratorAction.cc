@@ -2,6 +2,7 @@
 
 // G4CMP
 #include "G4CMPEnergyPartition.hh"
+#include "G4CMPConfigManager.hh"
 #include "G4PhononLong.hh"
 #include "G4PhononTransFast.hh"
 #include "G4PhononTransSlow.hh"
@@ -13,45 +14,80 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "CLHEP/Units/PhysicalConstants.h"
-#include "g4analysis.hh"
 
 // std
+#include <fstream>
+#include <mutex>
 #include <cmath>
 #include <vector>
 
-PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction() = default;
+namespace {
+  std::ofstream g_txt;
+  std::once_flag g_txt_once;
+  std::mutex g_txt_mtx;
+}
+
+PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction() {
+  // optional: silence G4CMP prints
+  G4CMPConfigManager::SetVerboseLevel(0);
+}
+
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction() {
+  if (g_txt.is_open()) g_txt.close();
+}
+
+void PhononPrimaryGeneratorAction::OpenTxtOnce() {
+  std::call_once(g_txt_once, [](){
+    g_txt.open("dm_root.txt"); // CSV content, .txt extension
+    g_txt << "event_id,ER_eV,theta_rad,v_kms,x_cm,y_cm,z_cm\n";
+  });
+}
+
+void PhononPrimaryGeneratorAction::WriteTxtRow(int event_id, double ER_eV, double theta_rad,
+                                               double v_kms, double x_cm, double y_cm, double z_cm) const {
+  if (!g_txt.is_open()) return;
+  std::lock_guard<std::mutex> lock(g_txt_mtx);
+  g_txt << event_id << ',' << ER_eV << ',' << theta_rad << ','
+        << v_kms << ',' << x_cm << ',' << y_cm << ',' << z_cm << '\n';
+}
 
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
-  // --- masses
-  const G4double m_DM = 1.0 * GeV;
-  const G4double m_T  = 184.0 * CLHEP::amu_c2;
+  OpenTxtOnce();
 
-  // --- DM halo speed (truncated Maxwellian)
+  // --- masses
+  const G4double m_DM = 1.0 * GeV;                 // DM mass
+  const G4double m_T  = 184.0 * CLHEP::amu_c2;     // W-184 nucleus
+
+  // --- DM halo velocity (truncated Maxwellian)
   const G4ThreeVector v_gal = SampleDMVelocity_Galactic();
   const G4double v    = v_gal.mag();
   const G4double beta = v / CLHEP::c_light;
 
-  // --- isotropic CM angle
+  // --- scattering angle (isotropic)
   const G4double theta = SampleThetaIsotropic();
   const G4double cosTh = std::cos(theta);
 
-  // --- recoil energy: ER = 2 μ^2 v^2 / m_T * (1 - cosθ)
-  const G4double mu = (m_DM * m_T) / (m_DM + m_T);
-  const G4double E_R = (mu * mu / m_T) * (beta * beta) * (1.0 - cosTh);
+  // --- recoil: ER = 2 μ^2 v^2 / m_T (1 - cosθ)
+  const G4double mu   = (m_DM * m_T) / (m_DM + m_T);
+  const G4double E_R  = 2.0 * (mu * mu / m_T) * (beta * beta) * (1.0 - cosTh);
 
-  // --- sample a start position in a cylinder R=2 cm, H=4 cm (centered)
+  // --- sample start position (uniform in cylinder)
   const G4ThreeVector pos = SampleEventVertex();
 
-  // --- G4CMP partition (tell it “W-184” by AAAZZZ code)
-  constexpr int PDG_W184 = 184074;
+  // --- log per-event line (units: eV, rad, km/s, cm)
+  WriteTxtRow(event->GetEventID(),
+              E_R / eV, theta, v / (km/s),
+              pos.x()/cm, pos.y()/cm, pos.z()/cm);
+
+  // --- partition using position-based constructor (no PV used)
+  constexpr int PDG_W184 = 184074; // AAAZZZ for W-184
   G4CMPEnergyPartition part(pos);
   part.DoPartition(/*PDGcode=*/PDG_W184, /*Etotal=*/E_R, /*eNIEL=*/0.0);
 
-  // grab the generated secondaries as primaries
   std::vector<G4PrimaryParticle*> prims;
   part.GetPrimaries(prims);
 
-  // optional: relabel phonon polarizations to chosen fractions
+  // optional: relabel phonon polarizations
   const G4double fracTS = 0.50, fracTF = 0.35;
   for (auto* p : prims) {
     auto* pd = p->GetParticleDefinition();
@@ -65,21 +101,10 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
     }
   }
 
-  // make vertex and attach primaries
+  // --- attach primaries to event
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
   for (auto* p : prims) vtx->SetPrimary(p);
   event->AddPrimaryVertex(vtx);
-
-  // --- (nice to have) per-event logging via g4analysis
-  //auto* ana = G4AnalysisManager::Instance();
-  //ana->FillNtupleIColumn(0, event->GetEventID());
-  //ana->FillNtupleDColumn(1, E_R / eV);
-  //ana->FillNtupleDColumn(2, theta);
-  //ana->FillNtupleDColumn(3, v / (km/s));
-  //ana->FillNtupleDColumn(4, pos.x()/cm);
-  //ana->FillNtupleDColumn(5, pos.y()/cm);
-  //ana->FillNtupleDColumn(6, pos.z()/cm);
-  //ana->AddNtupleRow();
 }
 
 // ---------- helpers ----------
@@ -104,6 +129,7 @@ G4double PhononPrimaryGeneratorAction::SampleThetaIsotropic() const {
 }
 
 G4ThreeVector PhononPrimaryGeneratorAction::SampleEventVertex() const {
+  // Uniform in cylinder R=2 cm, H=4 cm, centered at origin.
   const G4double R     = 2.0 * cm;
   const G4double Hhalf = 2.0 * cm;
   const G4double r   = R * std::sqrt(G4UniformRand());
