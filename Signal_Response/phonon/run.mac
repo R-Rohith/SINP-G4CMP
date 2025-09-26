@@ -1,5 +1,6 @@
 # run.mac — phonon-only, headless
 
+/run/numberOfThreads 16
 /control/verbose 0
 /run/verbose 0
 
