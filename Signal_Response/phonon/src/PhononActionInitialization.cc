@@ -1,22 +1,16 @@
 #include "PhononActionInitialization.hh"
 #include "PhononPrimaryGeneratorAction.hh"
 #include "G4CMPStackingAction.hh"
-// #include "RunAction.hh"   // <- optional, only if you decide to use it
+#include "RunAction.hh"
 
 void PhononActionInitialization::BuildForMaster() const {
-  // Master thread gets only run-scoped actions (if any).
-  // If you don’t need any, leave this empty.
-  // Example (optional):
-  // SetUserAction(new RunAction());
+  // Master thread: run-level only (opens/closes dm_root.txt)
+  SetUserAction(new RunAction());
 }
 
 void PhononActionInitialization::Build() const {
-  // Worker threads: primary generator + stacking (and other per-thread actions).
+  // Worker threads: generator + stacking + (can also have a RunAction; harmless)
   SetUserAction(new PhononPrimaryGeneratorAction());
   SetUserAction(new G4CMPStackingAction());
-
-  // Optional extras:
-  // SetUserAction(new RunAction());
-  // SetUserAction(new EventAction());
-  // SetUserAction(new SteppingAction());
+  SetUserAction(new RunAction());   // optional; safe either way
 }
