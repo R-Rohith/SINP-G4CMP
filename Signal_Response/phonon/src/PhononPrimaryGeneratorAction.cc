@@ -1,13 +1,14 @@
+// PhononPrimaryGeneratorAction.cc
 #include "PhononPrimaryGeneratorAction.hh"
 
-// G4CMP
+// --- G4CMP
 #include "G4CMPEnergyPartition.hh"
 #include "G4CMPConfigManager.hh"
 #include "G4PhononLong.hh"
 #include "G4PhononTransFast.hh"
 #include "G4PhononTransSlow.hh"
 
-// Geant4
+// --- Geant4
 #include "G4Event.hh"
 #include "G4PrimaryVertex.hh"
 #include "G4PrimaryParticle.hh"
@@ -15,99 +16,97 @@
 #include "Randomize.hh"
 #include "CLHEP/Units/PhysicalConstants.h"
 
-// std
-#include <fstream>
-#include <mutex>
+// (for ntuple filling → RunAction opens dm_root.txt via G4AnalysisManager)
+#include "g4analysis.hh"
+
+// --- std
 #include <cmath>
 #include <vector>
 
-namespace {
-  std::ofstream g_txt;
-  std::once_flag g_txt_once;
-  std::mutex g_txt_mtx;
-}
-
 PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction() {
-  // optional: silence G4CMP prints
-  G4CMPConfigManager::SetVerboseLevel(0);
+  // Keep G4CMP messages quiet unless you want verbosity
+  static bool once = false;
+  if (!once) { G4CMPConfigManager::SetVerboseLevel(0); once = true; }
 }
 
-PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction() {
-  if (g_txt.is_open()) g_txt.close();
-}
-
-void PhononPrimaryGeneratorAction::OpenTxtOnce() {
-  std::call_once(g_txt_once, [](){
-    g_txt.open("dm_root.txt"); // CSV content, .txt extension
-    g_txt << "event_id,ER_eV,theta_rad,v_kms,x_cm,y_cm,z_cm\n";
-  });
-}
-
-void PhononPrimaryGeneratorAction::WriteTxtRow(int event_id, double ER_eV, double theta_rad,
-                                               double v_kms, double x_cm, double y_cm, double z_cm) const {
-  if (!g_txt.is_open()) return;
-  std::lock_guard<std::mutex> lock(g_txt_mtx);
-  g_txt << event_id << ',' << ER_eV << ',' << theta_rad << ','
-        << v_kms << ',' << x_cm << ',' << y_cm << ',' << z_cm << '\n';
-}
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction() = default;
 
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
-  OpenTxtOnce();
+  // -----------------------------
+  // 1) Dark-matter kinematics
+  // -----------------------------
+  const G4double m_DM = 1.0 * GeV;                 // dark matter mass
+  const G4double m_T  = 184.0 * CLHEP::amu_c2;     // W-184 target nucleus mass
 
-  // --- masses
-  const G4double m_DM = 1.0 * GeV;                 // DM mass
-  const G4double m_T  = 184.0 * CLHEP::amu_c2;     // W-184 nucleus
-
-  // --- DM halo velocity (truncated Maxwellian)
-  const G4ThreeVector v_gal = SampleDMVelocity_Galactic();
+  const G4ThreeVector v_gal = SampleDMVelocity_Galactic(); // (m/s)
   const G4double v    = v_gal.mag();
-  const G4double beta = v / CLHEP::c_light;
+  const G4double beta = v / CLHEP::c_light;                 // dimensionless
 
-  // --- scattering angle (isotropic)
-  const G4double theta = SampleThetaIsotropic();
+  const G4double theta = SampleThetaIsotropic();            // [rad]
   const G4double cosTh = std::cos(theta);
 
-  // --- recoil: ER = 2 μ^2 v^2 / m_T (1 - cosθ)
-  const G4double mu   = (m_DM * m_T) / (m_DM + m_T);
-  const G4double E_R  = 2.0 * (mu * mu / m_T) * (beta * beta) * (1.0 - cosTh);
+  // Elastic recoil (non-relativistic): ER = 2 μ^2 v^2 / m_T * (1 - cosθ)
+  const G4double mu  = (m_DM * m_T) / (m_DM + m_T);
+  const G4double E_R = (mu * mu / m_T) * (beta * beta) * (1.0 - cosTh); // [energy units]
 
-  // --- sample start position (uniform in cylinder)
-  const G4ThreeVector pos = SampleEventVertex();
+  // -----------------------------
+  // 2) Sample event vertex
+  // -----------------------------
+  const G4ThreeVector pos = SampleEventVertex(); // uniform in cylinder R=2 cm, H=4 cm
 
-  // --- log per-event line (units: eV, rad, km/s, cm)
-  WriteTxtRow(event->GetEventID(),
-              E_R / eV, theta, v / (km/s),
-              pos.x()/cm, pos.y()/cm, pos.z()/cm);
-
-  // --- partition using position-based constructor (no PV used)
-  constexpr int PDG_W184 = 184074; // AAAZZZ for W-184
+  // -----------------------------
+  // 3) Partition with G4CMP
+  // -----------------------------
+  // Use position-based ctor (no PV dependencies)
+  constexpr int PDG_W184 = 184074;         // AAAZZZ pseudo-PDG for W-184
   G4CMPEnergyPartition part(pos);
   part.DoPartition(/*PDGcode=*/PDG_W184, /*Etotal=*/E_R, /*eNIEL=*/0.0);
 
   std::vector<G4PrimaryParticle*> prims;
   part.GetPrimaries(prims);
 
-  // optional: relabel phonon polarizations
-  const G4double fracTS = 0.50, fracTF = 0.35;
+  // Optional: impose a starting mode mix (TS/TF/L)
+  const G4double fracTS = 0.50;
+  const G4double fracTF = 0.35;
   for (auto* p : prims) {
     auto* pd = p->GetParticleDefinition();
-    if (pd == G4PhononLong::Definition() ||
-        pd == G4PhononTransSlow::Definition() ||
-        pd == G4PhononTransFast::Definition()) {
+    if (pd == G4PhononLong::Definition()
+     || pd == G4PhononTransSlow::Definition()
+     || pd == G4PhononTransFast::Definition()) {
       const G4double u = G4UniformRand();
-      if      (u < fracTS)            p->SetParticleDefinition(G4PhononTransSlow::Definition());
-      else if (u < fracTS + fracTF)   p->SetParticleDefinition(G4PhononTransFast::Definition());
-      else                             p->SetParticleDefinition(G4PhononLong::Definition());
+      if      (u < fracTS)              p->SetParticleDefinition(G4PhononTransSlow::Definition());
+      else if (u < fracTS + fracTF)     p->SetParticleDefinition(G4PhononTransFast::Definition());
+      else                               p->SetParticleDefinition(G4PhononLong::Definition());
     }
   }
 
-  // --- attach primaries to event
+  // -----------------------------
+  // 4) Create vertex & attach primaries
+  // -----------------------------
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
   for (auto* p : prims) vtx->SetPrimary(p);
   event->AddPrimaryVertex(vtx);
+
+  // -----------------------------
+  // 5) Fill per-event ntuple (thread-safe; merged by RunAction)
+  // -----------------------------
+  auto* ana = G4AnalysisManager::Instance();
+  // column indices must match RunAction::BeginOfRunAction
+  ana->FillNtupleIColumn(0, event->GetEventID());
+  ana->FillNtupleDColumn(1, E_R / eV);
+  ana->FillNtupleDColumn(2, theta);
+  ana->FillNtupleDColumn(3, v / (km/s));
+  ana->FillNtupleDColumn(4, pos.x()/cm);
+  ana->FillNtupleDColumn(5, pos.y()/cm);
+  ana->FillNtupleDColumn(6, pos.z()/cm);
+  ana->AddNtupleRow();
 }
 
-// ---------- helpers ----------
+// =============================
+// Helpers
+// =============================
+
+// Galactic truncated Maxwell-Boltzmann (no Earth boost)
 G4ThreeVector PhononPrimaryGeneratorAction::SampleDMVelocity_Galactic() const {
   const G4double v0    = 220.0 * km / s;
   const G4double vesc  = 533.0 * km / s;
@@ -123,19 +122,22 @@ G4ThreeVector PhononPrimaryGeneratorAction::SampleDMVelocity_Galactic() const {
   return v;
 }
 
+// θ isotropic in 3D: cosθ ~ U[-1,1] ⇒ θ = arccos(1 - 2u)
 G4double PhononPrimaryGeneratorAction::SampleThetaIsotropic() const {
-  const G4double u = G4UniformRand();
-  return std::acos(1.0 - 2.0*u);
+  const G4double u = 2.0 * CLHEP::pi * G4UniformRand();
+  return u;
 }
 
+// Uniform inside cylinder: R=2 cm, H=4 cm, centered at origin (axis = ẑ)
 G4ThreeVector PhononPrimaryGeneratorAction::SampleEventVertex() const {
-  // Uniform in cylinder R=2 cm, H=4 cm, centered at origin.
   const G4double R     = 2.0 * cm;
   const G4double Hhalf = 2.0 * cm;
+
   const G4double r   = R * std::sqrt(G4UniformRand());
   const G4double phi = 2.0 * CLHEP::pi * G4UniformRand();
   const G4double x   = r * std::cos(phi);
   const G4double y   = r * std::sin(phi);
   const G4double z   = (2.0 * G4UniformRand() - 1.0) * Hhalf;
+
   return {x, y, z};
 }
