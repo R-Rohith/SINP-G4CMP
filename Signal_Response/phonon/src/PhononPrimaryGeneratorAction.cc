@@ -18,6 +18,7 @@
 // std
 #include <cmath>
 #include <vector>
+#include <iostream>
 
 PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction() = default;
 
@@ -46,7 +47,7 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   constexpr int PDG_W184 = 184074;
   G4CMPEnergyPartition part(pos);
   part.DoPartition(/*PDGcode=*/PDG_W184, /*Etotal=*/E_R, /*eNIEL=*/0.0);
-
+  //std::cout<<"RECOIL Energy: "<<E_R/eV<<std::endl;
   // grab the generated secondaries as primaries
   std::vector<G4PrimaryParticle*> prims;
   part.GetPrimaries(prims);
@@ -65,6 +66,7 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
     }
   }
 
+  std::cout<<v/km*s<<'\t'<<theta<<'\t'<<E_R/eV<<'\t'<<pos[0]<<'\t'<<pos[1]<<'\t'<<pos[2]<<'\t'<<prims.size()<<std::endl;
   // make vertex and attach primaries
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
   for (auto* p : prims) vtx->SetPrimary(p);
