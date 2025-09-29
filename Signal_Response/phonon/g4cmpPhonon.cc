@@ -14,7 +14,7 @@
 // 20170816  Add example-specific configuration manager
 // 20220718  Remove obsolete pre-processor macros G4VIS_USE and G4UI_USE
 
-#include "G4RunManager.hh"
+#include "G4RunManagerFactory.hh"
 #include "G4UIExecutive.hh"
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
@@ -29,8 +29,7 @@ int main(int argc,char** argv)
 {
  // Construct the run manager
  //
- G4RunManager * runManager = new G4RunManager;
-
+ G4RunManager * runManager = G4RunManagerFactory::CreateRunManager();
  // Set mandatory initialization classes
  //
  PhononDetectorConstruction* detector = new PhononDetectorConstruction();

@@ -12,7 +12,7 @@
 
 //void PhononActionInitialization::BuildForMaster() const {
   // master thread: typically only run-level actions
-  //SetUserAction(new RunAction());
+//SetUserAction(new RunAction());
 //}
 
 void PhononActionInitialization::Build() const {

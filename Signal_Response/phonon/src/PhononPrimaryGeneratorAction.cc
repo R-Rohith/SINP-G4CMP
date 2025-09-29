@@ -15,13 +15,25 @@
 #include "CLHEP/Units/PhysicalConstants.h"
 #include "g4analysis.hh"
 
+#include "G4CMPUtils.hh"
+
 // std
 #include <cmath>
 #include <vector>
 #include <iostream>
 
-PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction() = default;
-
+PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
+{
+  fout.open(G4CMP::DebuggingFileThread("Generator_output.txt"),std::ios::out);
+	if (!fout.good()) {
+      G4ExceptionDescription msg;
+      msg << "Error opening generator output file ";
+      G4Exception("PhononSensitivity::SetOutputFile", "PhonSense003",
+                  FatalException, msg);
+      fout.close();
+    }
+}
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();}
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   // --- masses
   const G4double m_DM = 1.0 * GeV;
@@ -65,8 +77,8 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
       else                             p->SetParticleDefinition(G4PhononLong::Definition());
     }
   }
-
-  std::cout<<v/km*s<<'\t'<<theta<<'\t'<<E_R/eV<<'\t'<<pos[0]<<'\t'<<pos[1]<<'\t'<<pos[2]<<'\t'<<prims.size()<<std::endl;
+  
+  fout<<v/km*s<<'\t'<<theta<<'\t'<<E_R/eV<<'\t'<<pos[0]<<'\t'<<pos[1]<<'\t'<<pos[2]<<'\t'<<prims.size()<<'\t'<<part.LindhardScalingFactor(E_R,74,184)<<std::endl;
   // make vertex and attach primaries
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
   for (auto* p : prims) vtx->SetPrimary(p);

@@ -29,6 +29,7 @@ public:
   
 public:
   virtual G4VPhysicalVolume* Construct();
+  virtual void ConstructSDandField();
   
 private:
   void DefineMaterials();
@@ -43,6 +44,7 @@ private:
   G4CMPSurfaceProperty* topSurfProp;
   G4CMPSurfaceProperty* wallSurfProp;
   G4CMPElectrodeSensitivity* electrodeSensitivity;
+  G4LogicalVolume* fpSubstrateLV;
 
   G4bool fConstructed;		// Flag to not re-recreate surface properties
 };

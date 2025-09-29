@@ -17,10 +17,12 @@
 #include "PhononConfigManager.hh"
 #include <fstream>
 
+#include"G4CMPUtils.hh"
 
 PhononSensitivity::PhononSensitivity(G4String name) :
   G4CMPElectrodeSensitivity(name), fileName("") {
-  SetOutputFile(PhononConfigManager::GetHitOutput());
+ // SetOutputFile(PhononConfigManager::GetHitOutput());
+  SetOutputFile(G4CMP::DebuggingFileThread(PhononConfigManager::GetHitOutput()));
 }
 
 /* Move is disabled for now because old versions of GCC can't move ofstream
@@ -83,6 +85,7 @@ void PhononSensitivity::SetOutputFile(const G4String &fn) {
   if (fileName != fn) {
     if (output.is_open()) output.close();
     fileName = fn;
+    std::cout<<"Opening file "<<fileName<<std::endl;
     output.open(fileName, std::ios_base::out);
     if (!output.good()) {
       G4ExceptionDescription msg;
