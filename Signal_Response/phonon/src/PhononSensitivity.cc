@@ -17,10 +17,12 @@
 #include "PhononConfigManager.hh"
 #include <fstream>
 
+#include"G4CMPUtils.hh"
 
 PhononSensitivity::PhononSensitivity(G4String name) :
   G4CMPElectrodeSensitivity(name), fileName("") {
-  SetOutputFile(PhononConfigManager::GetHitOutput());
+ // SetOutputFile(PhononConfigManager::GetHitOutput());
+  SetOutputFile(G4CMP::DebuggingFileThread(PhononConfigManager::GetHitOutput()));
 }
 
 /* Move is disabled for now because old versions of GCC can't move ofstream
@@ -60,20 +62,20 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
 
   if (output.good()) {
     for (G4CMPElectrodeHit* hit : *hitVec) {
-      output << runMan->GetCurrentRun()->GetRunID() << ','
-             << runMan->GetCurrentEvent()->GetEventID() << ','
-             << hit->GetTrackID() << ','
-             << hit->GetParticleName() << ','
-             << hit->GetStartEnergy()/eV << ','
-             << hit->GetStartPosition().getX()/m << ','
-             << hit->GetStartPosition().getY()/m << ','
-             << hit->GetStartPosition().getZ()/m << ','
-             << hit->GetStartTime()/ns << ','
-             << hit->GetEnergyDeposit()/eV << ','
-             << hit->GetWeight() << ','
-             << hit->GetFinalPosition().getX()/m << ','
-             << hit->GetFinalPosition().getY()/m << ','
-             << hit->GetFinalPosition().getZ()/m << ','
+      output << runMan->GetCurrentRun()->GetRunID() << '\t'
+             << runMan->GetCurrentEvent()->GetEventID() << '\t'
+             << hit->GetTrackID() << '\t'
+             << hit->GetParticleName() << '\t'
+             << hit->GetStartEnergy()/eV << '\t'
+             << hit->GetStartPosition().getX()/m << '\t'
+             << hit->GetStartPosition().getY()/m << '\t'
+             << hit->GetStartPosition().getZ()/m << '\t'
+             << hit->GetStartTime()/ns << '\t'
+             << hit->GetEnergyDeposit()/eV << '\t'
+             << hit->GetWeight() << '\t'
+             << hit->GetFinalPosition().getX()/m << '\t'
+             << hit->GetFinalPosition().getY()/m << '\t'
+             << hit->GetFinalPosition().getZ()/m << '\t'
              << hit->GetFinalTime()/ns << '\n';
     }
   }
@@ -83,18 +85,19 @@ void PhononSensitivity::SetOutputFile(const G4String &fn) {
   if (fileName != fn) {
     if (output.is_open()) output.close();
     fileName = fn;
-    output.open(fileName, std::ios_base::app);
+    std::cout<<"Opening file "<<fileName<<std::endl;
+    output.open(fileName, std::ios_base::out);
     if (!output.good()) {
       G4ExceptionDescription msg;
       msg << "Error opening output file " << fileName;
       G4Exception("PhononSensitivity::SetOutputFile", "PhonSense003",
                   FatalException, msg);
       output.close();
-    } else {
+    } else {/*
       output << "Run ID,Event ID,Track ID,Particle Name,Start Energy [eV],"
              << "Start X [m],Start Y [m],Start Z [m],Start Time [ns],"
              << "Energy Deposited [eV],Track Weight,End X [m],End Y [m],End Z [m],"
-             << "Final Time [ns]\n";
+             << "Final Time [ns]\n";*/
     }
   }
 }
