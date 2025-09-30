@@ -45,7 +45,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
 PhononDetectorConstruction::PhononDetectorConstruction()
-  : fLiquidHelium(0), fGermanium(0), fAluminum(0), fTungsten(0),
+  : fLiquidHelium(0), fGermanium(0), fAluminum(0), fTungsten(0), fCaWO4(0),
     fWorldPhys(0), topSurfProp(0), botSurfProp(0), wallSurfProp(0),
     electrodeSensitivity(0), fConstructed(false) {;}
 
@@ -93,6 +93,15 @@ void PhononDetectorConstruction::DefineMaterials()
   fGermanium = nistManager->FindOrBuildMaterial("G4_Ge");
   fAluminum = nistManager->FindOrBuildMaterial("G4_Al");
   fTungsten = nistManager->FindOrBuildMaterial("G4_W");
+
+ G4Element *elCa = nistManager->FindOrBuildElement("Ca");
+ G4Element *elW = nistManager->FindOrBuildElement("W");
+ G4Element *elO = nistManager->FindOrBuildElement("O");
+ G4double density = 6.1*g/cm3;
+ fCaWO4 = new G4Material("CalciumTungstate", density, 3);
+ fCaWO4->AddElement(elCa, 1);
+ fCaWO4->AddElement(elW, 1);
+ fCaWO4->AddElement(elO, 4);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
@@ -109,7 +118,7 @@ void PhononDetectorConstruction::SetupGeometry()
   fWorldPhys = new G4PVPlacement(0,G4ThreeVector(),worldLogical,"World",0,
                                  false,0);
   
-  //                               
+  /*                               
   // Germanium cylinder - this is the volume in which we will propagate phonons
   //  
   G4VSolid* fGermaniumSolid = new G4Tubs("fGermaniumSolid",0.*cm,3.81*cm,
@@ -150,6 +159,31 @@ void PhononDetectorConstruction::SetupGeometry()
   G4VPhysicalVolume* aluminumBotPhysical = new G4PVPlacement(0,
     G4ThreeVector(0.,0.,-1.28*cm), fAluminumLogical, "fAluminumPhysical",
     worldLogical,false,1);
+*/
+
+  G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0.*deg, 360.*deg);
+  G4LogicalVolume* SubstrateLogical1 =  new G4LogicalVolume(SubstrateSolid,fCaWO4,"SubstrateLogical1");
+  G4VPhysicalVolume* SubstratePhys =  new G4PVPlacement(0,G4ThreeVector(),SubstrateLogical1,"SubstratePhys", worldLogical,false,0,true);
+
+  //fpSubstrateLV = SubstrateLogical1;	// Store volume for SD attachment
+
+  // Substrate lattice information
+
+  // G4LatticeManager gives physics processes access to lattices by volume
+  G4LatticeManager* LM = G4LatticeManager::GetLatticeManager();
+  G4LatticeLogical* SubstrateLogical = LM->LoadLattice(fCaWO4, "CaWO4");
+  G4LatticePhysical* SubstratePhysical = new G4LatticePhysical(SubstrateLogical);
+
+  SubstratePhysical->SetMillerOrientation(1,0,0);
+  LM->RegisterLattice(SubstratePhys, SubstratePhysical);
+
+  G4VSolid* BolometerSolid = new G4Tubs("BolometerSolid", 0., 0.2*cm, 0.001*cm, 0.*deg, 360.*deg);
+  G4LogicalVolume* BolometerLogical =
+    new G4LogicalVolume(BolometerSolid,fTungsten,"BolometerLogical");
+  G4VPhysicalVolume* BolometerPhysical =
+    new G4PVPlacement(0, G4ThreeVector(0.,0.,0.201*cm), BolometerLogical,
+		      "BolometerPhysical",worldLogical,false,0,true);
+
 
   //
   // detector -- Note : "sensitive detector" is attached to Germanium crystal
@@ -158,7 +192,7 @@ void PhononDetectorConstruction::SetupGeometry()
   if (!electrodeSensitivity)
     electrodeSensitivity = new PhononSensitivity("PhononElectrode");
   SDman->AddNewDetector(electrodeSensitivity);
-  fGermaniumLogical->SetSensitiveDetector(electrodeSensitivity);
+  SubstrateLogical1->SetSensitiveDetector(electrodeSensitivity);
 
   //
   // surface between Al and Ge determines phonon reflection/absorption
@@ -176,17 +210,11 @@ void PhononDetectorConstruction::SetupGeometry()
 
     const G4double anhCutoff = 520., reflCutoff = 350.;   // Units external
 
-    topSurfProp = new G4CMPSurfaceProperty("TopAlSurf", 1.0, 0.0, 0.0, 0.0,
+    topSurfProp = new G4CMPSurfaceProperty("TopTESSurf", 1.0, 0.0, 0.0, 0.0,
 					  	        0.3, 1.0, 0.0, 0.0);
     topSurfProp->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs,
 					 diffCoeffs, specCoeffs, GHz, GHz, GHz);
     AttachPhononSensor(topSurfProp);
-
-    botSurfProp = new G4CMPSurfaceProperty("BotAlSurf", 1.0, 0.0, 0.0, 0.0,
-					   	        0.3, 1.0, 0.0, 0.0);
-    botSurfProp->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs,
-					 diffCoeffs, specCoeffs, GHz, GHz, GHz);
-    AttachPhononSensor(botSurfProp);
 
     wallSurfProp = new G4CMPSurfaceProperty("WallSurf", 0.0, 1.0, 0.0, 0.0,
 					    	          0.0, 1.0, 0.0, 0.0);
@@ -198,11 +226,9 @@ void PhononDetectorConstruction::SetupGeometry()
   //
   // Separate surfaces for sensors vs. bare sidewall
   //
-  new G4CMPLogicalBorderSurface("detTop", GePhys, aluminumTopPhysical,
+  new G4CMPLogicalBorderSurface("detTop", SubstratePhys, BolometerPhysical,
 				topSurfProp);
-  new G4CMPLogicalBorderSurface("detBot", GePhys, aluminumBotPhysical,
-				botSurfProp);
-  new G4CMPLogicalBorderSurface("detWall", GePhys, fWorldPhys,
+  new G4CMPLogicalBorderSurface("detWall", SubstratePhys, fWorldPhys,
 				wallSurfProp);
 
   //                                        
@@ -211,8 +237,8 @@ void PhononDetectorConstruction::SetupGeometry()
   worldLogical->SetVisAttributes(G4VisAttributes::Invisible);
   G4VisAttributes* simpleBoxVisAtt= new G4VisAttributes(G4Colour(1.0,1.0,1.0));
   simpleBoxVisAtt->SetVisibility(true);
-  fGermaniumLogical->SetVisAttributes(simpleBoxVisAtt);
-  fAluminumLogical->SetVisAttributes(simpleBoxVisAtt);
+  SubstrateLogical1->SetVisAttributes(simpleBoxVisAtt);
+  BolometerLogical->SetVisAttributes(simpleBoxVisAtt);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
