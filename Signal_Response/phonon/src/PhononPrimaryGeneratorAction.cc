@@ -37,7 +37,7 @@ PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();}
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   // --- masses
   const G4double m_DM = 1.0 * GeV;
-  const G4double m_T  = 184.0 * CLHEP::amu_c2;
+  const G4double m_T  = 16.0 * CLHEP::amu_c2;
 
   // --- DM halo speed (truncated Maxwellian)
   const G4ThreeVector v_gal = SampleDMVelocity_Galactic();
@@ -56,7 +56,7 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   const G4ThreeVector pos = SampleEventVertex();
 
   // --- G4CMP partition (tell it “W-184” by AAAZZZ code)
-  constexpr int PDG_W184 = 184074;
+  constexpr int PDG_W184 = 16008;
   G4CMPEnergyPartition part(pos);
   part.DoPartition(/*PDGcode=*/PDG_W184, /*Etotal=*/E_R, /*eNIEL=*/0.0);
   //std::cout<<"RECOIL Energy: "<<E_R/eV<<std::endl;

@@ -14,7 +14,11 @@
 // 20170816  Add example-specific configuration manager
 // 20220718  Remove obsolete pre-processor macros G4VIS_USE and G4UI_USE
 
+//#ifdef G4MULTITHREADED
 #include "G4RunManagerFactory.hh"
+//#else
+#include "G4RunManager.hh"
+//#endif
 #include "G4UIExecutive.hh"
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
@@ -25,11 +29,28 @@
 #include "PhononConfigManager.hh"
 #include "PhononDetectorConstruction.hh"
 
+//#include "CLHEP/Random/RanecuEngine.h"
+
 int main(int argc,char** argv)
 {
  // Construct the run manager
  //
+ 
+#ifdef G4MULTITHREADED
  G4RunManager * runManager = G4RunManagerFactory::CreateRunManager();
+ runManager->SetNumberOfThreads(20); // Set the number of threads for multi-threading mode
+#else
+  G4RunManager * runManager = new G4RunManager;
+#endif
+
+ // Fixed Simulation                                                                           
+ // G4long seed = 2486945;
+ // CLHEP::HepRandom::setTheSeed(seed);
+ 
+ // OR: Random seed based on time (non-reproducible)
+  G4long seed = time(nullptr);
+  CLHEP::HepRandom::setTheSeed(seed);
+
  // Set mandatory initialization classes
  //
  PhononDetectorConstruction* detector = new PhononDetectorConstruction();
@@ -39,6 +60,9 @@ int main(int argc,char** argv)
  physics->SetCuts();
  runManager->SetUserInitialization(physics);
  
+ // To reduce the RAM usage
+ runManager->SetNumberOfEventsToBeStored(0);
+ //
  // Set user action classes (different for Geant4 10.0)
  //
  runManager->SetUserInitialization(new PhononActionInitialization);

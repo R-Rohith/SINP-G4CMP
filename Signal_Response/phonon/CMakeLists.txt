@@ -4,8 +4,20 @@ project(g4cmpPhonon)
 #----------------------------------------------------------------------------
 # Find G4CMP package -- NOTE: Assumes user has run g4cmp_env.*sh script!
 #
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_PREFIX_PATH $ENV{G4CMPINSTALL}/../..)
 find_package(G4CMP)
+
+#----------------------------------------------------------------------------
+# Apache Arrow and Parquet
+find_package(Arrow REQUIRED)
+find_package(Parquet REQUIRED)
+
+#target_link_libraries(g4cmpPhonon
+#  PRIVATE
+#    Arrow::arrow_shared
+#    Parquet::parquet_shared
+#)
 
 #----------------------------------------------------------------------------
 # Find Geant4 package
@@ -59,7 +71,7 @@ set_target_properties(phononLib PROPERTIES OUTPUT_NAME g4cmpPhonon)
 target_link_libraries(phononLib ${G4CMP_LIBRARIES} ${Geant4_LIBRARIES})
 
 add_executable(g4cmpPhonon g4cmpPhonon.cc)
-target_link_libraries(g4cmpPhonon phononLib)
+target_link_libraries(g4cmpPhonon phononLib Arrow::arrow_shared Parquet::parquet_shared)
 
 install(TARGETS phononLib DESTINATION lib)
 install(TARGETS g4cmpPhonon DESTINATION bin)

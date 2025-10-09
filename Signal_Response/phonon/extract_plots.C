@@ -1,10 +1,9 @@
 // The heat capacities were extrapolated from the data in (https://srd.nist.gov/JPCRD/jpcrd263.pdf)
 
+#include "arrow/io/file.h"
+#include "parquet/stream_reader.h"
 void extract_plots()
 {
-	ifstream fin;
-	fin.open("Generator-output.txt");
-
 	TH1D *velocity_hist =new TH1D("","Velocity distribution; velocity (km/s)",100,0,800);
 	TH1D *theta_hist =new TH1D("","Theta distribution; #theta (rad)",100,0,TMath::Pi());
 	TH1D *r_energy_hist =new TH1D("","Recoil energy distribution; Recoil energy (eV)",100,0,50);
@@ -15,10 +14,6 @@ void extract_plots()
 
 	auto c1 = new TCanvas("c1","Canvas",200,10,800,800);
 
-	Double_t velocity, theta, r_energy, xpos, ypos, zpos, phononNo, lfactor;
-	std::vector<Double_t> r_energy_arr;
-	std::vector<std::array<Double_t,3>> pos_arr;
-	
 	velocity_hist->Sumw2();
 	theta_hist->Sumw2();
 	r_energy_hist->Sumw2();
@@ -26,6 +21,18 @@ void extract_plots()
 	zpos_hist->Sumw2();
 	xypos_hist->Sumw2();
 	lfactor_hist->Sumw2();
+
+	Double_t velocity, theta, r_energy, xpos, ypos, zpos, phononNo, lfactor;
+	std::vector<Double_t> r_energy_arr;
+	std::vector<std::array<Double_t,3>> pos_arr;
+ 	std::vector<Double_t> edep_arr;
+        Int_t prev_event_no=-1, Event_no, event_count=0;
+
+	for(int i=0;i<30;i++)
+{
+	ifstream fin;
+	fin.open(string("Generator_output_G4WT")+i+".txt");
+	
 	while(fin>>velocity>>theta>>r_energy>>xpos>>ypos>>zpos>>phononNo>>lfactor)
 	{
 		velocity_hist->Fill(velocity);
@@ -37,8 +44,36 @@ void extract_plots()
 		pos_arr.push_back({xpos/10,ypos/10,zpos/10});
 		phononNo_hist->Fill(phononNo);
 		lfactor_hist->Fill(lfactor);
-		//if(!fin.good()) break;
 	}
+	
+	fin.close();
+
+       	Double_t tmp, time, Edep,Edep_sum=0, start_time=1e+5;
+	prev_event_no=-1;
+
+   std::shared_ptr<arrow::io::ReadableFile> infile;
+   PARQUET_ASSIGN_OR_THROW(infile,arrow::io::ReadableFile::Open((const std::string)(string("phonon_hits_G4WT")+i+".parquet")));
+   parquet::StreamReader stream{parquet::ParquetFileReader::Open(infile)};
+
+   int runID, eventID, trackID;
+   string particlename;
+   double startenergy,startx,starty,startz,startt,edep,TW,finalx,finaly,finalz,finalt;
+   while ( !stream.eof() )
+   {
+      stream >>runID>>eventID>>trackID>>particlename>>startenergy>>startx>>starty>>startz>>startt>>edep>>TW>>finalx>>finaly>>finalz>>finalt>> parquet::EndRow;
+      if ((prev_event_no==-1) || (prev_event_no!=eventID))
+      {   
+	      event_count++;
+	      if(prev_event_no!=-1)
+		      edep_arr.push_back(Edep_sum);
+	      Edep_sum=0;
+      }
+      prev_event_no=eventID;
+      Edep_sum+=edep;
+ }   
+   edep_arr.push_back(Edep_sum);
+
+}
 	velocity_hist->Draw();
 	c1->SaveAs("velocity-hist.pdf");
 	c1->Clear();
@@ -63,27 +98,6 @@ void extract_plots()
 	lfactor_hist->Draw("ep");
 	c1->SaveAs("Lindhard-factor-hist.pdf");
 	c1->Clear();
-	
-	fin.close();
-	fin.open("phonon_hits.txt");
-	TString particle_name;
- Double_t tmp, time, Edep,Edep_sum=0, start_time=1e+5;
- std::vector<Double_t> edep_arr;
- Int_t prev_event_no=-1, Event_no, event_count=0;
-
-	while (fin>>tmp>>Event_no>>tmp>>particle_name>>tmp>>tmp>>tmp>>tmp>>tmp>>Edep>>tmp>>tmp>>tmp>>tmp>>time)
-	{
-		if ((prev_event_no==-1) || (prev_event_no!=Event_no))
-		{
-   event_count++;
-   edep_arr.push_back(Edep_sum);
-   Edep_sum=0;
-		}
-  prev_event_no=Event_no;
-  Edep_sum+=Edep;
- }
-   edep_arr.push_back(Edep_sum);
-
   auto edep_vs_Renergy = new TGraph(); 
   TH1D *temperature_hist=new TH1D("","Expected temperature increase per event; T (#mu K)",100,0,100);
   TH2D *temp_vs_x_hist= new TH2D("","Temperature increase vs primary vertex position (X); x (cm); T (#mu K)",100,-2,2,100,0,50);
@@ -96,12 +110,12 @@ void extract_plots()
 	temp_vs_y_hist->Sumw2();
 	temp_vs_z_hist->Sumw2();
   for(int i=0;i<event_count;i++)
-  {
-	  temperature_hist->Fill(Get_temp(edep_arr[i+1]));
-	  edep_vs_Renergy->AddPoint(r_energy_arr[i],edep_arr[i+1]);
-	  temp_vs_x_hist->Fill(pos_arr[i][0],Get_temp(edep_arr[i+1]));
-	  temp_vs_y_hist->Fill(pos_arr[i][1],Get_temp(edep_arr[i+1]));
-	  temp_vs_z_hist->Fill(pos_arr[i][2],Get_temp(edep_arr[i+1]));
+  {						
+	  temperature_hist->Fill(Get_temp(edep_arr[i]));
+	  edep_vs_Renergy->AddPoint(r_energy_arr[i],edep_arr[i]);
+	  temp_vs_x_hist->Fill(pos_arr[i][0],Get_temp(edep_arr[i]));
+	  temp_vs_y_hist->Fill(pos_arr[i][1],Get_temp(edep_arr[i]));
+	  temp_vs_z_hist->Fill(pos_arr[i][2],Get_temp(edep_arr[i]));
   }
   edep_vs_Renergy->SetTitle("Recoil energy vs total energy deposited; Recoil energy (eV); Energy deposited (eV)");
   edep_vs_Renergy->Draw("AP*");
