@@ -40,6 +40,7 @@ private:
   G4Material* fGermanium;
   G4Material* fAluminum;
   G4Material* fTungsten;
+  G4Material* fCaWO4;
   G4VPhysicalVolume* fWorldPhys;
   G4CMPSurfaceProperty* topSurfProp;
   G4CMPSurfaceProperty* botSurfProp;
