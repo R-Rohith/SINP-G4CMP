@@ -66,7 +66,9 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 
   // optional: relabel phonon polarizations to chosen fractions
   const G4double fracTS = 0.50, fracTF = 0.35;
+  long int no_of_phonons=0;
   for (auto* p : prims) {
+	  no_of_phonons+=p->GetWeight();
     auto* pd = p->GetParticleDefinition();
     if (pd == G4PhononLong::Definition() ||
         pd == G4PhononTransSlow::Definition() ||
@@ -78,7 +80,7 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
     }
   }
   
-  fout<<v/km*s<<'\t'<<theta<<'\t'<<E_R/eV<<'\t'<<pos[0]<<'\t'<<pos[1]<<'\t'<<pos[2]<<'\t'<<prims.size()<<'\t'<<part.LindhardScalingFactor(E_R,74,184)<<std::endl;
+  fout<<v/km*s<<'\t'<<theta<<'\t'<<E_R/eV<<'\t'<<pos[0]<<'\t'<<pos[1]<<'\t'<<pos[2]<<'\t'<<no_of_phonons<<'\t'<<part.LindhardScalingFactor(E_R,8,16)<<std::endl;
   // make vertex and attach primaries
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
   for (auto* p : prims) vtx->SetPrimary(p);
