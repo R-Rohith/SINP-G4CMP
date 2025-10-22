@@ -8,6 +8,16 @@
 
 #include "G4CMPElectrodeSensitivity.hh"
 
+#include "arrow/io/file.h"
+#include "parquet/stream_writer.h"
+#include "parquet/arrow/writer.h"
+#include "arrow/util/type_fwd.h"
+
+using parquet::WriterProperties;
+using parquet::ParquetVersion;
+using parquet::ParquetDataPageVersion;
+using arrow::Compression;
+
 class PhononSensitivity final : public G4CMPElectrodeSensitivity {
 public:
   PhononSensitivity(G4String name);
@@ -33,6 +43,10 @@ protected:
 private:
   std::ofstream output;
   G4String fileName;
+
+  // Paraquet file writing-------------
+  std::shared_ptr<arrow::io::FileOutputStream> outfile;
+  std::unique_ptr<parquet::StreamWriter> os;
 };
 
 #endif

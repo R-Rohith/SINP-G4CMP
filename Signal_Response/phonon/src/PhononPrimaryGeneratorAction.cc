@@ -15,22 +15,29 @@
 #include "Randomize.hh"
 #include "CLHEP/Units/PhysicalConstants.h"
 
-// --- our MT-safe logger
-#include "RunAction.hh"
+#include "G4CMPUtils.hh"
 
-// --- std
+// std
 #include <cmath>
 #include <vector>
+#include <iostream>
 
-PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction() {
-  G4CMPConfigManager::SetVerboseLevel(0);
+PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
+{
+  fout.open(G4CMP::DebuggingFileThread("Generator_output.txt"),std::ios::out);
+	if (!fout.good()) {
+      G4ExceptionDescription msg;
+      msg << "Error opening generator output file ";
+      G4Exception("PhononSensitivity::SetOutputFile", "PhonSense003",
+                  FatalException, msg);
+      fout.close();
+    }
 }
-PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction() = default;
-
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();}
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   // 1) DM kinematics
   const G4double m_DM = 1.0 * GeV;
-  const G4double m_T  = 184.0 * CLHEP::amu_c2;
+  const G4double m_T  = 16.0 * CLHEP::amu_c2;
 
   const G4ThreeVector v_gal = SampleDMVelocity_Galactic();
   const G4double v    = v_gal.mag();
@@ -45,17 +52,20 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   // 2) Sample vertex inside cylinder (R=2 cm, H=4 cm, centered)
   const G4ThreeVector pos = SampleEventVertex();
 
-  // 3) Partition with CMP (position-based)
-  constexpr int PDG_W184 = 184074; // AAAZZZ for W-184
+  // --- G4CMP partition (tell it “W-184” by AAAZZZ code)
+  constexpr int PDG_W184 = 16008;
   G4CMPEnergyPartition part(pos);
   part.DoPartition(/*PDGcode=*/PDG_W184, /*Etotal=*/E_R, /*eNIEL=*/0.0);
-
+  //std::cout<<"RECOIL Energy: "<<E_R/eV<<std::endl;
+  // grab the generated secondaries as primaries
   std::vector<G4PrimaryParticle*> prims;
   part.GetPrimaries(prims);
 
-  // Optional: mode mix
-  const G4double fracTS = 0.475, fracTF = 0.408;
+  // optional: relabel phonon polarizations to chosen fractions
+  const G4double fracTS = 0.50, fracTF = 0.35;
+  long int no_of_phonons=0;
   for (auto* p : prims) {
+	  no_of_phonons+=p->GetWeight();
     auto* pd = p->GetParticleDefinition();
     if (pd == G4PhononLong::Definition()
      || pd == G4PhononTransSlow::Definition()
@@ -66,8 +76,9 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
       else                             p->SetParticleDefinition(G4PhononLong::Definition());
     }
   }
-
-  // 4) Attach primaries
+  
+  fout<<v/km*s<<'\t'<<theta<<'\t'<<E_R/eV<<'\t'<<pos[0]<<'\t'<<pos[1]<<'\t'<<pos[2]<<'\t'<<no_of_phonons<<'\t'<<part.LindhardScalingFactor(E_R,8,16)<<std::endl;
+  // make vertex and attach primaries
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
   for (auto* p : prims) vtx->SetPrimary(p);
   event->AddPrimaryVertex(vtx);

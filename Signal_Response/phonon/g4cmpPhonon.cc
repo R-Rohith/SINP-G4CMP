@@ -1,5 +1,21 @@
 // main.cc  — MT-ready, no g4analysis required
 
+/// \file phonon/g4cmpPhonon.cc
+/// \brief Main program of the G4CMP/phonon example
+//
+// $Id$
+//
+// 20140509  Add conditional code for Geant4 10.0 vs. earlier
+// 20150112  Remove RM->Initialize() call to allow macro configuration
+// 20160111  Remove Geant4 version check since we now hard depend on 10.2+
+// 20170816  Add example-specific configuration manager
+// 20220718  Remove obsolete pre-processor macros G4VIS_USE and G4UI_USE
+
+//#ifdef G4MULTITHREADED
+#include "G4RunManagerFactory.hh"
+//#else
+#include "G4RunManager.hh"
+//#endif
 #include "G4UIExecutive.hh"
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
@@ -11,8 +27,27 @@
 #include "G4CMPConfigManager.hh"
 #include "PhononConfigManager.hh"
 
-#include <algorithm>
-#include <thread>
+//#include "CLHEP/Random/RanecuEngine.h"
+
+int main(int argc,char** argv)
+{
+ // Construct the run manager
+ //
+ 
+#ifdef G4MULTITHREADED
+ G4RunManager * runManager = G4RunManagerFactory::CreateRunManager();
+ runManager->SetNumberOfThreads(20); // Set the number of threads for multi-threading mode
+#else
+  G4RunManager * runManager = new G4RunManager;
+#endif
+
+ // Fixed Simulation                                                                           
+ // G4long seed = 2486945;
+ // CLHEP::HepRandom::setTheSeed(seed);
+ 
+ // OR: Random seed based on time (non-reproducible)
+  G4long seed = time(nullptr);
+  CLHEP::HepRandom::setTheSeed(seed);
 
 // Prefer the factory API when available (Geant4 ≥ 10.6)
 #if __has_include("G4RunManagerFactory.hh")
@@ -26,31 +61,16 @@
   #define USE_FACTORY 0
 #endif
 
-int main(int argc, char** argv) {
-  // 1) Run manager (MT when available)
-#if USE_FACTORY
-  auto* runManager =
-  G4RunManagerFactory::CreateRunManager(
-  #ifdef G4MULTITHREADED
-      G4RunManagerType::MT
-  #else
-      G4RunManagerType::Serial
-  #endif
-  );
-  #ifdef G4MULTITHREADED
-    // Default thread count (you can also set via macro: /run/numberOfThreads N)
-    unsigned hw = std::max(1u, std::thread::hardware_concurrency());
-    runManager->SetNumberOfThreads(std::min<unsigned>(hw, 16)); // cap at 16
-  #endif
-#else
-  #ifdef G4MULTITHREADED
-    auto* runManager = new G4MTRunManager();
-    unsigned hw = std::max(1u, std::thread::hardware_concurrency());
-    runManager->SetNumberOfThreads(std::min<unsigned>(hw, 8));
-  #else
-    auto* runManager = new G4RunManager();
-  #endif
-#endif
+ G4VUserPhysicsList* physics = new G4CMPPhysicsList();
+ physics->SetCuts();
+ runManager->SetUserInitialization(physics);
+ 
+ // To reduce the RAM usage
+ runManager->SetNumberOfEventsToBeStored(0);
+ //
+ // Set user action classes (different for Geant4 10.0)
+ //
+ runManager->SetUserInitialization(new PhononActionInitialization);
 
   // 2) Mandatory initializations
   runManager->SetUserInitialization(new PhononDetectorConstruction());

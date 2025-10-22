@@ -3,10 +3,10 @@
 #include "G4CMPStackingAction.hh"
 #include "RunAction.hh"
 
-void PhononActionInitialization::BuildForMaster() const {
-  // Master thread: run-level only (opens/closes dm_root.txt)
-  SetUserAction(new RunAction());
-}
+//void PhononActionInitialization::BuildForMaster() const {
+  // master thread: typically only run-level actions
+//SetUserAction(new RunAction());
+//}
 
 void PhononActionInitialization::Build() const {
   // Worker threads: generator + stacking + (can also have a RunAction; harmless)

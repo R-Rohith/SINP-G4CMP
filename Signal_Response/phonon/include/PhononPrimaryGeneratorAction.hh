@@ -2,13 +2,14 @@
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "G4ThreeVector.hh"
 
+#include<fstream>
+
 class G4Event;
 
 class PhononPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction {
 public:
   PhononPrimaryGeneratorAction();
-  ~PhononPrimaryGeneratorAction() override;
-
+  ~PhononPrimaryGeneratorAction();	// override = default;
   void GeneratePrimaries(G4Event* event) override;
 
 private:
@@ -18,9 +19,5 @@ private:
 
   // Position sampling (uniform in cylinder R=2 cm, H=4 cm, centered)
   G4ThreeVector SampleEventVertex() const;
-
-  // Text logging
-  void OpenTxtOnce();
-  void WriteTxtRow(int event_id, double ER_eV, double theta_rad,
-                   double v_kms, double x_cm, double y_cm, double z_cm) const;
+  std::ofstream fout;
 };

@@ -48,7 +48,7 @@
 PhononDetectorConstruction::PhononDetectorConstruction()
   : fLiquidHelium(0), fTungsten(0), fCaWO4(0),
     fWorldPhys(0), topSurfProp(0), wallSurfProp(0),
-    electrodeSensitivity(0), fConstructed(false) {;}
+    electrodeSensitivity(0), fConstructed(false), fpSubstrateLV(0) {;}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
@@ -82,6 +82,20 @@ G4VPhysicalVolume* PhononDetectorConstruction::Construct()
 
   return fWorldPhys;
 }
+
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
+ 
+void PhononDetectorConstruction::ConstructSDandField() {
+  G4SDManager* SDman = G4SDManager::GetSDMpointer();
+ 
+  PhononSensitivity* electrodeSD
+    = new PhononSensitivity("PhononElectrode");
+ 
+  SDman->AddNewDetector(electrodeSD);
+  fpSubstrateLV->SetSensitiveDetector(electrodeSD);
+}
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
@@ -151,14 +165,15 @@ void PhononDetectorConstruction::SetupGeometry()
     worldLogical,false,0);
 
   // detector -- Note : "sensitive detector" is attached to CaWO4 crystal
-  //
+  fpSubstrateLV=fCaWO4Logical;
+  /*
   G4SDManager* SDman = G4SDManager::GetSDMpointer();
   if (!electrodeSensitivity)
     electrodeSensitivity = new PhononSensitivity("PhononElectrode");
   SDman->AddNewDetector(electrodeSensitivity);
   fCaWO4Logical->SetSensitiveDetector(electrodeSensitivity);
 
-  //
+  */
   // surface between W and CaWO4 determines phonon reflection/absorption
   //
   if (!fConstructed) {
@@ -172,7 +187,8 @@ void PhononDetectorConstruction::SetupGeometry()
       {5.88e-2, 7.83e-4, -2.47e-6, 1.71e-8, -2.98e-11};
     const std::vector<G4double> specCoeffs =
       {0,928, -2.03e-4, -3.21e-6, 3.1e-9, 2.9e-13};
-
+    
+    /// why do we need this?
     const G4double anhCutoff = 520., reflCutoff = 350.;   // Units external
 
     topSurfProp = new G4CMPSurfaceProperty("TopSurf", 1.0, 0.0, 0.0, 0.0,
@@ -219,10 +235,11 @@ AttachPhononSensor(G4CMPSurfaceProperty *surfProp) {
   // See G4CMPPhononElectrode.hh or README.md for property keys
 
   // Properties must be added to existing surface-property table
+  /// ask Sayantan about these values
   auto sensorProp = surfProp->GetPhononMaterialPropertiesTablePointer();
   sensorProp->AddConstProperty("filmAbsorption", 1.0);    // True sensor area
   sensorProp->AddConstProperty("filmThickness", 200.*nm);
-  sensorProp->AddConstProperty("gapEnergy", 2.3e-6*eV);
+  sensorProp->AddConstProperty("gapEnergy", 2.3e-6*eV); // \Delta=1.74 k_B T_c
   sensorProp->AddConstProperty("lowQPLimit", 3.);
   sensorProp->AddConstProperty("phononLifetime", 250.*ps);
   sensorProp->AddConstProperty("phononLifetimeSlope", 0.25);
