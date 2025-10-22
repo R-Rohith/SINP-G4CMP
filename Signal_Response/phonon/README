@@ -1,93 +1,355 @@
+This class G4CMPEnergyPartition takes an energy deposit (from a particle step or event) and
+generates secondary particles: electrons, holes, and phonons, based on physics models (Lindhard
+theory for nuclear recoils, Fano factor fluctuations for e/h pairs, etc.). It also handles down-sampling
+(biasing) to limit the number of secondaries for simulation efficiency, and accounts for the Neganov-
+Trofimov-Luke (NTL) effect (phonons from charge acceleration in an electric field).
+
+In summary, this code models how energy is split into charge and heat in a crystal, creates the
+corresponding secondary particles (with appropriate energies and weights), and provides methods to
+retrieve these secondaries either as primary particles (for event generation) or as secondaries in a
+physics process.
+
+-- Static Configuration: Luke Phonon Downsampling Flag --
+
+namespace {
+G4double lukeDownsampling = true;
+}
+
+Despite being a G4double , it’s initialized with the boolean true (which converts to 1.0 ). This is
+effectively a flag related to how Luke phonon generation is handled. The code later uses
+lukeDownsampling in a boolean context to decide whether to automatically compute the fraction of
+Luke phonons or use a preset value. In the constructor, this flag is updated as follows:
+
+lukeDownsampling = (G4CMPConfigManager::GetLukeSampling() < 0.);
+
+Here, G4CMPConfigManager::GetLukeSampling() likely returns a user-configured fraction for Luke
+phonon generation (NTL phonon emission). If the user provided a negative value, it's treated as a
+signal that the code should calculate the appropriate fraction automatically. So
+lukeDownsampling becomes true (i.e., non-zero) if the configured Luke sampling is negative,
+meaning "enable automatic Luke phonon down-scaling computation". If the user set a non-negative
+fraction (e.g., 0.5 or 1.0), then lukeDownsampling will be false (0), indicating the code should use the
+user's fixed fraction for Luke phonons instead of computing it.
+
+This mechanism allows the simulation to either use a fixed fraction of Luke phonons or dynamically
+limit the number of Luke phonons per event based on some criteria (as we'll see in
+ComputeLukeSampling). In summary, the static flag acts as a switch: true means "automatically
+adjust Luke phonon production (downsampling)" fallse means "use the preset fraction given by the
+user".
+
+-- Constructors and Member Initialization -- 
+
+The class G4CMPEnergyPartition provides multiple constructors and a destructor:
+
+A) Primary Constructor: G4CMPEnergyPartition(G4Material* mat, G4LatticePhysical*
+lat) - This is the main constructor that initializes the partitioner with a specific material and its
+associated lattice (crystal lattice properties). It sets up internal variables:
+
+1) verboseLevel is obtained from the config manager
+( G4CMPConfigManager::GetVerboseLevel() ), determining how much debug output the
+class will produce.
+
+2) fillSummaryData is a flag (here set to false by default) indicating whether a summary
+record should be placed into a global hits collection. If false, the summary will be kept only
+locally.
+
+3) material is set to the provided G4Material* mat (the detector material in which energy
+deposition occurs).
+
+4) Various parameters are initialized: biasVoltage to 0 (will be set later if a position is known),
+holeFraction to 0.5, nParticlesMinimum to 10, and applyDownsampling to true by
+default.
+
+a) holeFraction = 0.5 means by default the electron and hole share the kinetic energy
+equally when a pair is created (this value can be adjusted if one wanted to allocate more
+kinetic energy to either the electron or hole).
+
+b) nParticlesMinimum = 10 is a threshold used to decide whether downsampling
+should be applied – if the number of generated particles is below this, the code will avoid
+scaling (to not bias small statistics too heavily).
+
+c) applyDownsampling = true enables the feature of reducing the number of
+generated secondaries when energies are large (to keep simulation manageable). This is
+tied to user settings (like G4CMP_SAMPLE_ENERGY ) we will discuss later.
+
+5) A new G4CMPChargeCloud is allocated and assigned to cloud . This object will be used to
+spatially distribute charge pairs if the configuration requests a "charge cloud" (a small spatial
+spread of e/h pair starting positions instead of all at a single point).
+
+6) Several counters are initialized to zero: nPairsTrue , nPairsGen (true number of e/h pairs vs
+generated pairs after any downsampling), chargeEnergyLeft (any leftover ionization energy
+after making pairs), and similarly nPhononsTrue , nPhononsGen , phononEnergyLeft for
+phonons.
+
+7) summary is a pointer for a G4CMPPartitionData object (which holds details of the partition 
+result); it starts as nullptr (0).
+
+8) The constructor calls SetLattice(lat) , presumably storing the provided lattice properties
+(band gap energy, Debye energy, Fano factor, etc. come from the lattice object).
+
+9) Finally, it sets the static lukeDownsampling flag based on user configuration as described
+above. If the user did not specify a fixed Luke phonon fraction (i.e., GetLukeSampling() < 0 ), then lukeDownsampling 
+stays true to indicate the code should compute the Luke phonon
+scaling later.
+
+B) Delegating Constructors: Two additional constructors delegate to the main one:
+
+1) G4CMPEnergyPartition(const G4VPhysicalVolume* volume) calls
+G4CMPEnergyPartition() (the default constructor, not explicitly shown, which likely calls the
+primary one with default arguments or performs minimal init) and then calls
+UseVolume(volume) . This is a convenience constructor: given a physical volume in the
+geometry, it will retrieve the material and lattice from that volume and set up the partitioner for
+that location.
+
+2) G4CMPEnergyPartition(const G4ThreeVector& pos) similarly calls the default
+constructor then UsePosition(pos) . This allows initializing the partitioner by a point in space
+ - the code will find which volume contains that point, get its material and lattice, and also
+determine the local electric bias field (voltage) at that position.
+
+C) Destructor: ~G4CMPEnergyPartition() deletes the dynamically allocated cloud object
+(the charge cloud) and sets the pointer to null. It specifically notes not to delete summary
+because if fillSummaryData was true, the summary object is owned by the event’s hits
+collection ( G4CMPPartitionSummary container). Thus, the destructor avoids double-free by
+leaving summary (it will be cleaned up by Geant4 event management if it was inserted there).
+
+Overall, the constructors set up the object either from known material/lattice or by querying the
+geometry. After construction (particularly via UseVolume / UsePosition ), the object is ready to
+accept an energy deposit and partition it.
 
 
- =================================================================
-                     Phonon propagation in Geant4
- =================================================================
-                         Daniel Brandt - SLAC
-                       dbrandt@slac.stanford.edu
+-- Extracting Material and Bias from Geometry (UseVolume, UsePosition) --
 
-This example demonstrates how phonon propagation in cryogenic crystals
-can be simulated in Geant4.
+After constructing the partition object, the code provides UseVolume and UsePosition methods to
+configure the material, lattice, and bias based on geometry:
 
-1.INTRODUCTION
+A) UseVolume(const G4VPhysicalVolume* volume): This function links the partitioner to a
+specific detector volume. It does two main things:
 
-Phonon propagation is different from most other Geant4 propagation
-simulations in a number of respects:
+1) Calls FindLattice(volume) - likely a method (inherited or utility) that finds the
+G4LatticePhysical object associated with this volume (in G4CMP, each crystal volume can
+have an associated lattice defining its crystal properties). Then it calls SetLattice(lat)
+internally to store that lattice in this object.
 
--Phonons are massless particles moving slower than the speed of light
+2) Calls SetMaterial(volume->GetLogicalVolume()->GetMaterial()) - this  retrieves the
+G4Material of that volume and stores it in the material member. This is critical because
+the Lindhard partition function and pair production energy depend on the material.
 
--Phonon propagation and momentum vectors are not parallel
+3) It also informs the cloud object of the volume: cloud->UseVolume(volume) . The
+G4CMPChargeCloud likely needs to know the volume shape (and coordinate frame) so it can
+generate random positions within that volume for the e/h pairs if required. Essentially, it
+prepares the charge cloud generator to produce points confined to this volume (or around the
+interaction point in that volume).
 
--Events isotropic in phonon-momentum space are not isotropic in real
- space.
+B) UsePosition(const G4ThreeVector& pos): This function is a higher-level convenience that finds
+the volume containing a given spatial point and sets up the partitioner for it:
 
-This example will simulate the propagation of acoustic phonons through
-a Germanium crystal, providing processes to simulate phonon scattering
-of isotopic impurities, mode mixing between polarization states and
-anharmonic downconversion (phonon splitting). As such it provides all
-the physics required to realistically simulate phonon propagation in
-cryogenically cold semiconductor crystals.
+1) It calls G4CMP::GetVolumeAtPoint(pos) (a static utility) to find which
+G4VPhysicalVolume the provided position lies in.
 
-2. GEOMETRY
+2) If verboseLevel is enabled (non-zero), it prints a message identifying the volume: e.g., 
+"G4CMPEnergyPartition: (x,y,z) at volume VolumeName". This helps confirm the location being used.
 
-In this example the geometry is a cylindrical Germanium crystal
-centered at (0,0,0) with Almuninium end caps. Phonons absorbed in the
-Al end caps are counted by the sensitive detector.
+3) Then it calls UseVolume(volume) to perform the steps described above (associate the lattice,
+material, and cloud with that volume).
 
-3. PRIMARY EVENT
+4) Additionally, UsePosition calls SetBiasVoltage(pos) . This extra step estimates the local
+bias voltage at that position.
 
-The primary event is a single phonon of energy 7.5 meV at the center of
-the Ge crystal. The polarization type (fast transvere, slow transverse or
-longitudinal) is determined randomly according to the density of states
-in Germanium. The direction of propagation is than determined by by the
-User Stacking Action class XPhononStackingAction.
+C) SetBiasVoltage(const G4ThreeVector& pos): This method finds the electric potential across the
+detector at the given position:
 
-4. EXECUTION & OUTPUT
+1) It uses G4CMP::CreateTouchableAtPoint(pos) to get a G4VTouchable (essentially a
+handle that knows the detector hierarchy at that point, used for field lookups).
 
-The executable must be run from within the source directory of the example
-to ensure that it can find the path for crystal data files.
-Alternatively the search path for the crystal maps can be set in the
-setting the CRYSTALMAPS environment variable. If this variable does not
-exist, it defaults to ./CrystalMaps.
+2) Then it calls G4CMP::GetBiasThroughPosition(touch, pos) , which presumably calculates
+the voltage at that position or the voltage difference across that volume (perhaps by integrating
+the electric field or looking up a predefined bias map). The result is stored in biasVoltage.
 
-Upon execution, the vis.mac visualization macro will automatically be
-executed. For the visualization to work, OpenGL support must be installed.
-The macro will automatically generate a single Primary Event (7.5 meV phonon)
-at the center of the crystal.
+3) If verbose, it prints an estimate: e.g., "est. X V across VolumeName @ (x,y,z)", where X is
+biasVoltage/volt (dividing by the unit volt gives the numeric value in volts). This line
+confirms the local bias (in volts) at that point and the volume it pertains to.
 
-The trajectory colour will indicate the polarization state of the phonon:
-Longitudinal:    blue
-Fast Transverse: green
-Slow Transverse: red
+The biasVoltage will be used later when computing how many Luke phonons to produce –
+essentially representing the potential energy available per charge crossing the detector. A nonzero bias
+means moving a charge from one side of the detector to the other will release extra energy in the form
+of phonons (the Neganov-Trofimov-Luke effect).
 
-A small circle will be drawn wherever a phonon is absorbed into the 
-Aluminium. All events within the Aluminium are written into plain-text
-space-sparated-value (ssv) files.
+In summary, UseVolume / UsePosition configure which material and lattice to use for energy
+partitioning and, if a specific location is given, determine the bias field context. After calling these, the
+object knows the band gap energy (for pair creation), pair production energy, Debye energy (max
+phonon energy), Fano factor, etc., from the lattice, as well as the electric potential difference relevant
+at that point.
 
-timing.ssv
-------------
-COLUMN 1: Time phonon was absorbed in ns since start of run
-COLUMN 2: Energy of phonon absorbed
+-- Summary Data Container (CreateSummary) --
 
-caustic.ssv
-------------
-COLUMN 1: x-position of absobrtion in mm
-COLUMN 2: y-position of absobrtion in mm
-COLUMN 3: z-position of absobrtion in mm
+The class can record the results of the energy partitioning in a summary object of type
+G4CMPPartitionData . The method CreateSummary() manages this:
 
-Every time a phonon is simulated, the information is appended to timing.ssv
-and caustic.ssv. If the files do not exist they will be created.
+G4CMPPartitionData* G4CMPEnergyPartition::CreateSummary() {
+if (verboseLevel)
+G4cout << "G4CMPEnergyPartition::CreateSummary" << G4endl;
+if (!fillSummaryData) { // No collection, just keep local
+if (!summary) summary = new G4CMPPartitionData;
+return summary;
+}
 
-5. TESTING
+summary = new G4CMPPartitionData; G4CMPPartitionSummary::Insert(summary);
+// Ownership transfers to container
+...
+return summary;
+}
 
-In order to test the example, it can be run as
-   ./XGeBox run.in > test.out
+1) If fillSummaryData is false (the default unless configured otherwise), it means we are not
+putting the summary in the global collection. In that case, the code reuses the local summary
+pointer: if it’s null, allocate a new G4CMPPartitionData ; if it already exists (from a previous
+partition), it will be reused/overwritten. It then returns this pointer. Essentially, in this mode the
+summary data is only accessible via this object, not stored globally in the event.
 
-This will create a single primary event and then cause the example to
-terminate automatically, with all screen output redirected to test.out.
+2) If fillSummaryData is true, the code will create a new G4CMPPartitionData for each
+partition event and then call G4CMPPartitionSummary::Insert(summary).
+G4CMPPartitionSummary is likely a manager for a collection (a hits collection or data
+container) that accumulates all partition summaries in an event. In this case, the newly allocated
+summary is handed off to that container (hence "ownership transfers to container"). The idea is
+that each energy deposit (hit) can produce a record in a collection, probably for output or
+analysis at end of event.
 
-If all went well, test.out should be identical to run.out provided with
-this example. Also, the files caustic.ssv and timing.ssv should have been 
-created and be identical to caustic.out and timing.out respectively.
+3) If verbosity is high (level > 2), it prints how many records are now in the partition summary
+collection after insertion.
 
-After the first time the example runs, it will append to caustic.ssv and timing.ssv. If the testing should be re-run, then caustic.ssv and timing.ssv will have to be deleted.
+The returned summary pointer is then used throughout the partitioning process to fill in information
+about this particular energy deposit: total energies, number of pairs/phonons generated, sampling
+factors, positions, etc. It’s a way of logging what happened, which can later be retrieved for analysis (for
+example, one could examine the ionization yield, Fano factor used, etc., for each energy deposit).
+
+Note: The summary is not deleted in the destructor if it was inserted in the global container, because
+Geant4 will handle it (the container likely attaches to the event which cleans up at end of event). If
+fillSummaryData was false, the summary stays with the object and would be reused or deleted
+when the G4CMPEnergyPartition object itself is destroyed.
+
+-- Lindhard Scaling for Nuclear Recoil Energy (LindhardScalingFactor) --
+
+When a nuclear recoil occurs (e.g., a neutron or ion depositing energy in the lattice), not all energy
+goes into ionization; some is lost to lattice vibrations. The Lindhard theory gives the ionization yield of
+recoils. The function LindhardScalingFactor(G4double E, G4double Z, G4double A)
+computes what fraction of the recoil energy is ionizing:
+
+if (!material) {
+G4Exception(..., RunMustBeAborted,
+"No material configured for energy partition");
+return 1.;
+}
+const G4VNIELPartition* nielFunc = G4CMPConfigManager::GetNIELPartition();
+return nielFunc->PartitionNIEL(E, material, Z, A);
+
+1) If the material is not set (which should not happen if UseVolume/UsePosition was called), it
+throws a fatal exception: you cannot partition energy without knowing the material (because pair
+creation energy and Lindhard yield depend on material properties).
+
+2) Assuming material is set, it obtains the configured NIEL (Non-Ionizing Energy Loss) partition
+function via G4CMPConfigManager::GetNIELPartition(). This returns a pointer to a model
+(concrete class implementing G4VNIELPartition interface). G4CMP provides several models
+(Lewin-Smith, Lindhard, etc.) that approximate the fraction of energy going into NIEL for a given
+recoil energy and projectile/target parameters. For example, the Lindhard model (or an
+empirical variant of it) is used. The code then calls
+nielFunc->PartitionNIEL(E, material, Z, A).
+
+3) Likely, PartitionNIEL returns the fraction of energy that goes into ionization (somewhat
+counter-intuitively named - but since it's named as a "Lindhard Factor" here). Given the usage later,
+if this function returns a value L between 0 and 1, then L * E is the ionizing energy and (1
+- L) * E is the non-ionizing (phonon) energy. In Lindhard theory, this yield depends on the
+recoil energy E and the atomic number Z and atomic mass A of the recoiling particle (and the
+target material's properties). Higher-Z recoils and low energies typically produce lower
+ionization yield.
+
+4) The function returns this fraction L . If no NIEL model were configured, this might default to
+returning 1 (meaning assume all energy ionizes), but here we assume the user set a model (or a
+default Lindhard model is in place).
+
+In context: This Lindhard factor is used only for certain particles (neutrons or heavy ions) to split
+energy. For example, in a dark matter detector simulation, a nuclear recoil might produce, say, 20%
+ionization (e/h pairs) and 80% phonons. The code will call LindhardScalingFactor to get L~0.2 , then use 
+that to partition the energy (as we will see in NuclearRecoil method). This approach
+matches known physics:"the ionization yield is computed by taking dE/dx as a fraction of the total (Lindhard
+theory)". The G4CMP package has classes like G4CMPLindhardNIEL and G4CMPLewinSmithNIEL
+to implement these formulas.
+
+-- Partitioning Energy: Main Logic in DoPartition --
+
+The heart of the code is in the DoPartition methods, which have several overloads to handle
+different inputs:
+
+A) DoPartition(const G4CMPStepAccumulator* steps)
+
+This overload is likely called after energy has been accumulated over a step or steps.
+G4CMPStepAccumulator presumably holds information about a particle’s continuous energy
+deposition (dE/dx) and NIEL. The code does:
+
+if (!steps) return;
+if (verboseLevel) {
+G4cout << "DoPartition steps" << G4endl << *steps << G4endl;
+}
+DoPartition(steps->pd->GetPDGEncoding(), steps->Edep, steps->Eniel);
+UpdateSummary(steps->end, steps->time, steps->trackID, steps->stepID);
+
+1) It first checks if steps is null and returns if so (no work).
+
+2) If verbose, it prints the content of the steps object (overloaded << likely prints details of
+energies, etc.).
+
+3) Then it calls the core DoPartition by passing: the PDG code of the particle ( steps->pd-
+>GetPDGEncoding() presumably gets the PDG code of the particle type that caused this
+deposition), the total energy deposited Edep (in this step/cluster of steps), and the non-ionizing
+energy Eniel . These values come from the tracking of that step.
+
+4) After partitioning, it calls UpdateSummary(steps->end, steps->time, steps->trackID,
+steps->stepID) . This fills the summary with the position ( steps->end might be the end-
+point of the step as a G4ThreeVector ), the time of the step, and the track and step IDs.
+Essentially, it records where and when this energy deposit happened and identifies it by track.
+This is useful for hits collections (linking the partition result to the location in the detector).
+
+Thus, this overload bridges from a continuous process (steps of a track) to the discrete generation of
+secondaries.
+
+B) DoPartition(G4int PDGcode, G4double energy, G4double
+eNIEL)
+
+This is a more explicit interface: it takes a PDG code of a particle and an energy deposit, optionally with
+a specified non-ionizing component eNIEL . The code:
+
+if (verboseLevel) {
+G4cout << "DoPartition: ParticleID " << PDGcode
+<< "; eTotal " << energy/MeV << " MeV; eNIEL " << eNIEL/MeV << "
+MeV" << G4endl;
+}
+if (energy <= 0. || eNIEL < 0.) {
+// Throw exception for invalid energy input
+...
+return;
+}
+// If user specified phonon energy directly (eNIEL > 0)
+if (eNIEL > 0.) {
+DoPartition(energy - eNIEL, eNIEL);
+} else {
+G4ParticleDefinition* proj = 0;
+if (PDGcode == 2112) proj = G4Neutron::Definition();
+else if (PDGcode > 1000000000) proj = G4IonTable::GetIonTable()-
+>GetIon(PDGcode);
+else if (PDGcode > 10000) proj = G4IonTable::GetIonTable()->GetIon(PDGcode% 1000, PDGcode/1000);
+if (proj) {
+G4double Z = proj->GetAtomicNumber(), A = proj->GetPDGMass()/amu_c2;
+if (verboseLevel>1) { ... print Nuclear Recoil info ... }
+NuclearRecoil(energy, Z, A);
+} else {
+Ionization(energy);
+}
+}
+if (summary) summary->PDGcode = PDGcode; 
+
+1) It logs the particle ID and energies if verbose. The energies are printed in MeV for readability
+(dividing by MeV unit).
+
+2) It validates inputs: energy must be > 0 and eNIEL must not be negative. If energy is 0 or
+negative, or eNIEL is negative (which would be unphysical as an input), it throws an exception
+( EventMustBeAborted , since an invalid energy partition input likely indicates a serious error).
+This prevents further processing on bad data.
+
+3) 

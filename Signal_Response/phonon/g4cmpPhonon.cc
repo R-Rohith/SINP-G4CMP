@@ -1,7 +1,4 @@
-/***********************************************************************\
- * This software is licensed under the terms of the GNU General Public *
- * License version 3 or later. See G4CMP/LICENSE for the full license. *
-\***********************************************************************/
+// main.cc  — MT-ready, no g4analysis required
 
 /// \file phonon/g4cmpPhonon.cc
 /// \brief Main program of the G4CMP/phonon example
@@ -23,11 +20,12 @@
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
 
+#include "PhononDetectorConstruction.hh"
+#include "PhononActionInitialization.hh"
+
 #include "G4CMPPhysicsList.hh"
 #include "G4CMPConfigManager.hh"
-#include "PhononActionInitialization.hh"
 #include "PhononConfigManager.hh"
-#include "PhononDetectorConstruction.hh"
 
 //#include "CLHEP/Random/RanecuEngine.h"
 
@@ -51,10 +49,17 @@ int main(int argc,char** argv)
   G4long seed = time(nullptr);
   CLHEP::HepRandom::setTheSeed(seed);
 
- // Set mandatory initialization classes
- //
- PhononDetectorConstruction* detector = new PhononDetectorConstruction();
- runManager->SetUserInitialization(detector);
+// Prefer the factory API when available (Geant4 ≥ 10.6)
+#if __has_include("G4RunManagerFactory.hh")
+  #include "G4RunManagerFactory.hh"
+  #define USE_FACTORY 1
+#else
+  #include "G4RunManager.hh"
+  #ifdef G4MULTITHREADED
+    #include "G4MTRunManager.hh"
+  #endif
+  #define USE_FACTORY 0
+#endif
 
  G4VUserPhysicsList* physics = new G4CMPPhysicsList();
  physics->SetCuts();
@@ -67,36 +72,41 @@ int main(int argc,char** argv)
  //
  runManager->SetUserInitialization(new PhononActionInitialization);
 
- // Create configuration managers to ensure macro commands exist
- G4CMPConfigManager::Instance();
- PhononConfigManager::Instance();
+  // 2) Mandatory initializations
+  runManager->SetUserInitialization(new PhononDetectorConstruction());
 
- // Visualization manager
- //
- G4VisManager* visManager = new G4VisExecutive;
- visManager->Initialize();
- 
- // Get the pointer to the User Interface manager
- //
- G4UImanager* UImanager = G4UImanager::GetUIpointer();  
+  auto* physics = new G4CMPPhysicsList();
+  physics->SetCuts();
+  runManager->SetUserInitialization(physics);
 
- if (argc==1)   // Define UI session for interactive mode
- {
-      G4UIExecutive * ui = new G4UIExecutive(argc,argv);
-      ui->SessionStart();
-      delete ui;
- }
- else           // Batch mode
- {
-   G4String command = "/control/execute ";
-   G4String fileName = argv[1];
-   UImanager->ApplyCommand(command+fileName);
- }
+  // Your actions (PrimaryGenerator + Stacking + RunAction registered inside)
+  runManager->SetUserInitialization(new PhononActionInitialization());
 
- delete visManager;
- delete runManager;
+  // Ensure CMP & phonon config commands exist (for your macros)
+  G4CMPConfigManager::Instance();
+  PhononConfigManager::Instance();
 
- return 0;
+  // 3) Visualization (optional but handy)
+  auto* visManager = new G4VisExecutive();
+  visManager->Initialize();
+
+  // 4) UI or batch
+  auto* UImanager = G4UImanager::GetUIpointer();
+
+  if (argc == 1) {
+    // Interactive session
+    auto* ui = new G4UIExecutive(argc, argv);
+    // You can also execute a default vis macro here if you like:
+    // UImanager->ApplyCommand("/control/execute vis.mac");
+    ui->SessionStart();
+    delete ui;
+  } else {
+    // Batch mode: pass a macro file as arg1
+    G4String command = "/control/execute ";
+    UImanager->ApplyCommand(command + G4String(argv[1]));
+  }
+
+  delete visManager;
+  delete runManager;
+  return 0;
 }
-
-
