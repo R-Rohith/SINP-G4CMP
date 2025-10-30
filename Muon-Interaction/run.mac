@@ -1,0 +1,33 @@
+/run/numberOfThreads 30
+/run/initialize
+
+#/gps/particle mu-
+#/gps/energy 0.1 MeV
+/gps/number 1
+#/gps/ang/type beam1d
+#/gps/pos/centre 2.0 2.0 2.0 cm
+#/gps/direction -1 -1 -1
+#/gps/pos/type Volume
+#/gps/pos/shape Cylinder
+#/gps/pos/radius 2 mm
+#/gps/pos/halfz 2 mm
+
+
+#/vis/open OGL
+#/vis/drawVolume
+#/vis/viewer/set/style surface
+#/vis/scene/add/trajectories smooth
+#/vis/scene/endOfEventAction accumulate 10
+#/vis/geometry/set/visibility World
+#/vis/geometry/set/forceCloud World
+/g4cmp/producePhonons 1
+/g4cmp/produceCharges 0
+/g4cmp/samplingEnergy 0.01 eV
+
+#/tracking/verbose 5
+#/g4cmp/verbose 2
+
+#/process/inactivate phononScattering
+#/process/inactivate phononDownconversion
+/run/beamOn 500
+#/run/beamOn 1
