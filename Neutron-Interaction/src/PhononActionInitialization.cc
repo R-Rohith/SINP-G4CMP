@@ -9,6 +9,8 @@
 #include "PhononPrimaryGeneratorAction.hh"
 #include "G4CMPStackingAction.hh"
 #include "RunAction.hh"
+#include "MyEventAction.hh"
+#include "MySteppingAction.hh"
 
 //void PhononActionInitialization::BuildForMaster() const {
   // master thread: typically only run-level actions
@@ -16,7 +18,11 @@
 //}
 
 void PhononActionInitialization::Build() const {
+//    SetUserAction(new RunAction());
   SetUserAction(new PhononPrimaryGeneratorAction);
   SetUserAction(new G4CMPStackingAction);
-  //SetUserAction(new RunAction());
+    MyEventAction* eventAction = new MyEventAction();
+    SetUserAction(eventAction);
+    MySteppingAction* steppingAction = new MySteppingAction(eventAction);
+    SetUserAction(steppingAction);
 } 

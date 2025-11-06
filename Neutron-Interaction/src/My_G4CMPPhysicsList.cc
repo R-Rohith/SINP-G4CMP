@@ -61,7 +61,7 @@ My_G4CMPPhysicsList::My_G4CMPPhysicsList(G4int verbose) : G4VModularPhysicsList(
   RegisterPhysics( new G4DecayPhysics);
 
    // Hadron Elastic scattering
-  RegisterPhysics( new G4HadronElasticPhysics);
+//  RegisterPhysics( new G4HadronElasticPhysics);
 
    // Hadron Physics
   RegisterPhysics(  new G4HadronPhysicsFTFP_BERT);

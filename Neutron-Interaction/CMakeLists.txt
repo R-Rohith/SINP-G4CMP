@@ -72,6 +72,8 @@ set(phonon_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PhononSensitivity.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RunAction.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/My_G4CMPPhysicsList.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MyEventAction.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MySteppingAction.cc
     )
     
 if(USE_GEANT4_STATIC_LIBS)

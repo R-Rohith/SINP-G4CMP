@@ -13,7 +13,7 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "CLHEP/Units/PhysicalConstants.h"
-#include "g4analysis.hh"
+#include "g4root.hh"
 
 #include "G4CMPUtils.hh"
 
@@ -38,10 +38,35 @@ PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
                   FatalException, msg);
       fout.close();
     }
+  //--Analysismanager config
+/*  auto* ana = G4AnalysisManager::Instance();
+  ana->OpenFile(G4CMP::DebuggingFileThread("Generator_output.root"));
+ 
+  ana->CreateNtuple("Per-event-data","Per-event-data");
+  ana->CreateNtupleIColumn("Event_ID");
+  ana->CreateNtupleIColumn("PID");
+  ana->CreateNtupleDColumn("Initial_energy");
+  ana->CreateNtupleDColumn("Initial_posx");
+  ana->CreateNtupleDColumn("Initial_posy");
+  ana->CreateNtupleDColumn("Initial_posz");
+  ana->CreateNtupleDColumn("Initial_theta");
+  ana->CreateNtupleDColumn("Initial_phi");
+  ana->CreateNtupleDColumn("Initial_dirx");
+  ana->CreateNtupleDColumn("Initial_diry");
+  ana->CreateNtupleDColumn("Initial_dirz");
+  ana->CreateNtupleDColumn("Energy_dep");
+  ana->CreateNtupleDColumn("NSecondaries");
+  ana->CreateNtupleDColumn("NPhononL");
+  ana->CreateNtupleDColumn("NPhononTF");
+  ana->CreateNtupleDColumn("NPhononTS");
+  */
 // Tfin=new TFile("");
 // fluxhist=(TH1D*)Tfin->Get("");
 }
-PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();}
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction()
+{
+//	fout.close();
+}
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 /*
   // --- masses
@@ -150,13 +175,26 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   dir[1]=r*std::sin(theta)*std::sin(phi)-pos[1];
   dir[2]=r*std::cos(theta)-pos[2];
   G4double dirmag=std::sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
-  if(dirmag==0) cout<<"\n\n--Uh Oh... divide by zero------------\n\n";
+  if(dirmag==0) std::cout<<"\n\n--Uh Oh... divide by zero------------\n\n";
   dir[0]/=dirmag;
   dir[1]/=dirmag;
   dir[2]/=dirmag;
 
   fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
-
+/* 
+  G4AnalysisManager *ana = G4AnalysisManager::Instance();
+  ana->FillNtupleIColumn(0,event->GetEventID());
+  ana->FillNtupleIColumn(1,partType->GetPDGEncoding());
+  ana->FillNtupleDColumn(2,E/MeV);
+  ana->FillNtupleDColumn(3,pos[0]/cm);
+  ana->FillNtupleDColumn(4,pos[1]/cm);
+  ana->FillNtupleDColumn(5,pos[2]/cm);
+  ana->FillNtupleDColumn(6,theta);
+  ana->FillNtupleDColumn(7,phi);
+  ana->FillNtupleDColumn(8,dir[0]);
+  ana->FillNtupleDColumn(9,dir[1]);
+  ana->FillNtupleDColumn(10,dir[2]);
+*/  
   fParticleGun->GetCurrentSource()->GetPosDist()->SetCentreCoords(pos);
   fParticleGun->GetCurrentSource()->GetAngDist()->SetParticleMomentumDirection(dir);
   fParticleGun->GetCurrentSource()->GetEneDist()->SetMonoEnergy(E);
