@@ -18,7 +18,7 @@
 //}
 
 void PhononActionInitialization::Build() const {
-//    SetUserAction(new RunAction());
+    SetUserAction(new RunAction());
   SetUserAction(new PhononPrimaryGeneratorAction);
   SetUserAction(new G4CMPStackingAction);
     MyEventAction* eventAction = new MyEventAction();

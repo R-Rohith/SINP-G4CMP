@@ -6,8 +6,8 @@
 
 #include<fstream>
 
-//#include "TFile.h"
-//#include "TH1D.h"
+#include "TFile.h"
+#include "TH1D.h"
 
 class G4Event;
 
@@ -23,6 +23,6 @@ private:
   G4ThreeVector SampleEventVertex() const;
   std::ofstream fout;
   G4GeneralParticleSource *fParticleGun;
-//  TFile *Tfin;
-//  TH1D *fluxhist;
+  TFile *Tfin;
+  TH1D *fluxhist;
 };

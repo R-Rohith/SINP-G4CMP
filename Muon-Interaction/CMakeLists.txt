@@ -85,7 +85,7 @@ target_link_libraries(phononLib ${G4CMP_LIBRARIES} ${Geant4_LIBRARIES})
 
 add_executable(g4cmpPhonon g4cmpPhonon.cc)
 target_link_libraries(g4cmpPhonon phononLib Arrow::arrow_shared Parquet::parquet_shared 
-	#${ROOT_LIBRARIES}
+	${ROOT_LIBRARIES}
 )
 
 install(TARGETS phononLib DESTINATION lib)

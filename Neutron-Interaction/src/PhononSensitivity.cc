@@ -18,12 +18,13 @@
 #include <fstream>
 
 #include"G4CMPUtils.hh"
+#include "g4analysis.hh"
 
 PhononSensitivity::PhononSensitivity(G4String name) :
   G4CMPElectrodeSensitivity(name), fileName("") {
  // SetOutputFile(PhononConfigManager::GetHitOutput());
  // SetOutputFile(G4CMP::DebuggingFileThread(PhononConfigManager::GetHitOutput()));
-
+/*
    PARQUET_ASSIGN_OR_THROW(outfile,arrow::io::FileOutputStream::Open(G4CMP::DebuggingFileThread("phonon_hits.parquet")));
    parquet::WriterProperties::Builder builder;
    builder.max_row_group_length(100);
@@ -61,7 +62,7 @@ PhononSensitivity::PhononSensitivity(G4String name) :
     auto group_schema = std::static_pointer_cast<parquet::schema::GroupNode>(schema);
    os = std::make_unique<parquet::StreamWriter>(parquet::ParquetFileWriter::Open(outfile, group_schema, builder.build()));
 
-
+*/
 
 }
 
@@ -136,9 +137,10 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
 */   
 
 //  if (output.good()) {
-	double energy=0;
+//	double energy=0;
+    auto Ana=G4AnalysisManager::Instance();
     for (G4CMPElectrodeHit* hit : *hitVec) {
-      *os << runMan->GetCurrentRun()->GetRunID()
+/*      *os << runMan->GetCurrentRun()->GetRunID()
              << runMan->GetCurrentEvent()->GetEventID() 
              << hit->GetTrackID() 
              << hit->GetParticleName()
@@ -153,7 +155,23 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
              << hit->GetFinalPosition().getY()/m 
              << hit->GetFinalPosition().getZ()/m 
              << hit->GetFinalTime()/ns << parquet::EndRow; 
-	  //  energy+=hit->GetEnergyDeposit()/eV;
+	  //  energy+=hit->GetEnergyDeposit()/eV;*/
+	Ana->FillNtupleIColumn(1,0,runMan->GetCurrentRun()->GetRunID());
+	Ana->FillNtupleIColumn(1,1,runMan->GetCurrentEvent()->GetEventID());
+	Ana->FillNtupleIColumn(1,2,hit->GetTrackID());
+	Ana->FillNtupleSColumn(1,3,hit->GetParticleName());
+	Ana->FillNtupleDColumn(1,4,hit->GetStartEnergy()/eV);
+	Ana->FillNtupleDColumn(1,5,hit->GetStartPosition().getX()/m);
+	Ana->FillNtupleDColumn(1,6,hit->GetStartPosition().getY()/m);
+	Ana->FillNtupleDColumn(1,7,hit->GetStartPosition().getZ()/m);
+	Ana->FillNtupleDColumn(1,8,hit->GetStartTime()/ns);
+	Ana->FillNtupleDColumn(1,9,hit->GetEnergyDeposit()/eV);
+	Ana->FillNtupleIColumn(1,10,hit->GetWeight());
+	Ana->FillNtupleDColumn(1,11,hit->GetFinalPosition().getX()/m);
+	Ana->FillNtupleDColumn(1,12,hit->GetFinalPosition().getY()/m);
+	Ana->FillNtupleDColumn(1,13,hit->GetFinalPosition().getZ()/m);
+	Ana->FillNtupleDColumn(1,14,hit->GetFinalTime()/ns);
+	Ana->AddNtupleRow(1);
     }
     //os.flush();
     // std::cout << typeid(runMan->GetCurrentRun()->GetRunID()) 
@@ -176,6 +194,7 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
     //output.flush();
   //  hitsCollection->clear();
   //}
+//  Ana->Write();
 }
 
 void PhononSensitivity::SetOutputFile(const G4String &fn) {

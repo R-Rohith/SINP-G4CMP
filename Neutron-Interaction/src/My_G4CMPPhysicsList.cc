@@ -87,7 +87,7 @@ My_G4CMPPhysicsList::~My_G4CMPPhysicsList() {;}
 
 // These values are used as the default production thresholds
 // for the world volume.
-/*
+
 void My_G4CMPPhysicsList::ConstructParticle()
 {
  G4MuonPlus::MuonPlusDefinition();
@@ -100,10 +100,12 @@ void My_G4CMPPhysicsList::ConstructParticle()
  G4AntiNeutrinoE::AntiNeutrinoEDefinition();
  G4NeutrinoMu::NeutrinoMuDefinition();
  G4AntiNeutrinoMu::AntiNeutrinoMuDefinition();
-
+ G4Neutron::NeutronDefinition();
+ G4AntiNeutron::AntiNeutronDefinition();
+ 
  G4VModularPhysicsList::ConstructParticle();
 }
-
+/*
 void My_G4CMPPhysicsList::ConstructProcess()
 {
  G4ProcessManager *MuPlus=G4MuonPlus::MuonPlusDefinition()->GetProcessManager();

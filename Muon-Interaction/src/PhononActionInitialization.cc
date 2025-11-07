@@ -10,10 +10,17 @@
 #include "G4CMPStackingAction.hh"
 #include "RunAction.hh"
 
-//void PhononActionInitialization::BuildForMaster() const {
+#include "TApplication.h"
+#include "G4Threading.hh"
+
+#include <iostream>
+
+void PhononActionInitialization::BuildForMaster() const {
   // master thread: typically only run-level actions
 //SetUserAction(new RunAction());
-//}
+  TApplication ROOT("ROOT_APP",NULL,NULL); 
+}
+
 
 void PhononActionInitialization::Build() const {
   SetUserAction(new PhononPrimaryGeneratorAction);

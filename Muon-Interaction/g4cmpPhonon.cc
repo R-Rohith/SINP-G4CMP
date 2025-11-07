@@ -30,11 +30,14 @@
 #include "PhononDetectorConstruction.hh"
 
 
+#include "TROOT.h"
+#include "TApplication.h"
 
 //#include "CLHEP/Random/RanecuEngine.h"
 
 int main(int argc,char** argv)
 {
+// TApplication ROOT("ROOT_APP",NULL,NULL);
  // Construct the run manager
  //
  

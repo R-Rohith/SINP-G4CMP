@@ -16,10 +16,8 @@
 #include "g4analysis.hh"
 
 #include "G4CMPUtils.hh"
-
-//#include "G4MuonMinus.hh"
-//#include "G4MuonPlus.hh"
 #include "G4ParticleTypes.hh"
+
 
 // std
 #include <cmath>
@@ -38,10 +36,11 @@ PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
                   FatalException, msg);
       fout.close();
     }
-// Tfin=new TFile("");
-// fluxhist=(TH1D*)Tfin->Get("");
+ Tfin=new TFile("~/Data/Cosmic-Muon-Flux/555m/Muon_flux-v1.root","READ");
+ fluxhist=(TH1D*)Tfin->Get("histEnergy");
+ std::cout<<"\nSET\n";
 }
-PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();}
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();Tfin->Close();}
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 /*
   // --- masses
@@ -117,19 +116,22 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   pos[0]=r*std::cos(phiPos);
   pos[1]=r*std::sin(phiPos);
   pos[2]=4*cm;	//--The elevation of the muon source surface
-  G4double E=200e3*MeV, theta=CLHEP::pi-70*CLHEP::pi/180*G4UniformRand(), phi=2*CLHEP::pi*G4UniformRand();
+  G4double theta=CLHEP::pi-70*CLHEP::pi/180*G4UniformRand(), phi=2*CLHEP::pi*G4UniformRand();
   dir[0]=std::sin(theta)*std::cos(phi);
   dir[1]=std::sin(theta)*std::sin(phi);
   dir[2]=std::cos(theta);
-
-/*  do
-  {
-	  E=1e4*G4UniformRand();
-	  G4double prob=G4UniformRand(), thresh=fluxhist->GetBinContent(fluxhist->GetBin(E));
-  }while(prob<=thresh);
-  E*=MeV;*/
   
-  fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
+  G4double E,prob,thresh;
+
+  do
+  {
+	 E=1e4*G4UniformRand();
+	 prob=G4UniformRand()*fluxhist->GetMaximum();
+	 thresh=fluxhist->GetBinContent(fluxhist->GetBin(E));
+  }while(prob>=thresh);
+  E*=GeV;
+  
+  fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/GeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
 
   fParticleGun->GetCurrentSource()->GetPosDist()->SetCentreCoords(pos);
   fParticleGun->GetCurrentSource()->GetAngDist()->SetParticleMomentumDirection(dir);

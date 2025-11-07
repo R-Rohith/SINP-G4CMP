@@ -15,7 +15,7 @@ public:
   PhononActionInitialization() = default;
   ~PhononActionInitialization() override = default;
   void Build() const override;
-  //void BuildForMaster() const override;
+  void BuildForMaster() const override;
 };
 
 #endif	/* PhononActionInitialization_hh */

@@ -8,6 +8,8 @@
 
 // Geant4
 #include "G4Event.hh"
+#include "G4RunManager.hh"
+#include "G4Run.hh"
 #include "G4PrimaryVertex.hh"
 #include "G4PrimaryParticle.hh"
 #include "G4SystemOfUnits.hh"
@@ -30,14 +32,14 @@ PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
 {
   fParticleGun  = new G4GeneralParticleSource();
 
-  fout.open(G4CMP::DebuggingFileThread("Generator_output.txt"),std::ios::out);
+/*  fout.open(G4CMP::DebuggingFileThread("Generator_output.txt"),std::ios::out);
 	if (!fout.good()) {
       G4ExceptionDescription msg;
       msg << "Error opening generator output file ";
       G4Exception("PhononSensitivity::SetOutputFile", "PhonSense003",
                   FatalException, msg);
       fout.close();
-    }
+    }*/
   //--Analysismanager config
 /*  auto* ana = G4AnalysisManager::Instance();
   ana->OpenFile(G4CMP::DebuggingFileThread("Generator_output.root"));
@@ -180,21 +182,22 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   dir[1]/=dirmag;
   dir[2]/=dirmag;
 
-  fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
-/* 
+//  fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
+ 
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
-  ana->FillNtupleIColumn(0,event->GetEventID());
-  ana->FillNtupleIColumn(1,partType->GetPDGEncoding());
-  ana->FillNtupleDColumn(2,E/MeV);
-  ana->FillNtupleDColumn(3,pos[0]/cm);
-  ana->FillNtupleDColumn(4,pos[1]/cm);
-  ana->FillNtupleDColumn(5,pos[2]/cm);
-  ana->FillNtupleDColumn(6,theta);
-  ana->FillNtupleDColumn(7,phi);
-  ana->FillNtupleDColumn(8,dir[0]);
-  ana->FillNtupleDColumn(9,dir[1]);
-  ana->FillNtupleDColumn(10,dir[2]);
-*/  
+  ana->FillNtupleDColumn(0,0,G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID());
+  ana->FillNtupleIColumn(0,1,event->GetEventID());
+  ana->FillNtupleIColumn(0,2,partType->GetPDGEncoding());
+  ana->FillNtupleDColumn(0,3,E/MeV);
+  ana->FillNtupleDColumn(0,4,pos[0]/cm);
+  ana->FillNtupleDColumn(0,5,pos[1]/cm);
+  ana->FillNtupleDColumn(0,6,pos[2]/cm);
+  ana->FillNtupleDColumn(0,7,theta);
+  ana->FillNtupleDColumn(0,8,phi);
+  ana->FillNtupleDColumn(0,9,dir[0]);
+  ana->FillNtupleDColumn(0,10,dir[1]);
+  ana->FillNtupleDColumn(0,11,dir[2]);
+  
   fParticleGun->GetCurrentSource()->GetPosDist()->SetCentreCoords(pos);
   fParticleGun->GetCurrentSource()->GetAngDist()->SetParticleMomentumDirection(dir);
   fParticleGun->GetCurrentSource()->GetEneDist()->SetMonoEnergy(E);

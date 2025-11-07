@@ -38,12 +38,12 @@ int main(int argc,char** argv)
  // Construct the run manager
  //
  
-#ifdef G4MULTITHREADED
- G4RunManager * runManager = G4RunManagerFactory::CreateRunManager();
- runManager->SetNumberOfThreads(20); // Set the number of threads for multi-threading mode
-#else
+//#ifdef G4MULTITHREADED
+// G4RunManager * runManager = G4RunManagerFactory::CreateRunManager();
+// runManager->SetNumberOfThreads(20); // Set the number of threads for multi-threading mode
+//#else
   G4RunManager * runManager = new G4RunManager;
-#endif
+//#endif
 
  // Fixed Simulation                                                                           
   G4long seed = 1234567890;

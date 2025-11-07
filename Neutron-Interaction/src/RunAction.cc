@@ -24,10 +24,10 @@ void RunAction::BeginOfRunAction(const G4Run*) {
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
 //  if(IsMaster())
 //  {
-  ana->OpenFile("Generator_output");
 //  }
    
-  ana->CreateNtuple("Per_event_data","Per_event_data");
+  ana->CreateNtuple("Per_run_data","Per_run_data");
+  ana->CreateNtupleIColumn("Run_ID");
   ana->CreateNtupleIColumn("Event_ID");
   ana->CreateNtupleIColumn("PID");
   ana->CreateNtupleDColumn("Initial_energy");
@@ -44,7 +44,27 @@ void RunAction::BeginOfRunAction(const G4Run*) {
   ana->CreateNtupleDColumn("NPhononL");
   ana->CreateNtupleDColumn("NPhononTF");
   ana->CreateNtupleDColumn("NPhononTS");
-  std::cout<<"Created Tuples\n";
+  ana->FinishNtuple();
+  
+  ana->CreateNtuple("Per_event_data","Per_event_data");
+  ana->CreateNtupleIColumn("Run_ID");
+  ana->CreateNtupleIColumn("Event_ID");
+  ana->CreateNtupleIColumn("Track_ID");
+  ana->CreateNtupleSColumn("Particle Name");
+  ana->CreateNtupleDColumn("Start_energy");
+  ana->CreateNtupleDColumn("Start_positionX");
+  ana->CreateNtupleDColumn("Start_positionY");
+  ana->CreateNtupleDColumn("Start_positionZ");
+  ana->CreateNtupleDColumn("Start_time");
+  ana->CreateNtupleDColumn("Deposited_energy");
+  ana->CreateNtupleIColumn("Event_ID");
+  ana->CreateNtupleDColumn("Final_positionX");
+  ana->CreateNtupleDColumn("Final_positionY");
+  ana->CreateNtupleDColumn("Final_positionZ");
+  ana->CreateNtupleDColumn("Final_time");
+  ana->FinishNtuple();
+
+  ana->OpenFile("Generator_output");
 }
 
 void RunAction::EndOfRunAction(const G4Run*) {
