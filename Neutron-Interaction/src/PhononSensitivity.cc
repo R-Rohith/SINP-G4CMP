@@ -138,6 +138,7 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
 
 //  if (output.good()) {
 //	double energy=0;
+
     auto Ana=G4AnalysisManager::Instance();
     for (G4CMPElectrodeHit* hit : *hitVec) {
 /*      *os << runMan->GetCurrentRun()->GetRunID()
@@ -154,8 +155,8 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
              << hit->GetFinalPosition().getX()/m 
              << hit->GetFinalPosition().getY()/m 
              << hit->GetFinalPosition().getZ()/m 
-             << hit->GetFinalTime()/ns << parquet::EndRow; 
-	  //  energy+=hit->GetEnergyDeposit()/eV;*/
+             << hit->GetFinalTime()/ns << parquet::EndRow; */
+	  //  energy+=hit->GetEnergyDeposit()/eV;
 	Ana->FillNtupleIColumn(1,0,runMan->GetCurrentRun()->GetRunID());
 	Ana->FillNtupleIColumn(1,1,runMan->GetCurrentEvent()->GetEventID());
 	Ana->FillNtupleIColumn(1,2,hit->GetTrackID());
@@ -166,7 +167,7 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
 	Ana->FillNtupleDColumn(1,7,hit->GetStartPosition().getZ()/m);
 	Ana->FillNtupleDColumn(1,8,hit->GetStartTime()/ns);
 	Ana->FillNtupleDColumn(1,9,hit->GetEnergyDeposit()/eV);
-	Ana->FillNtupleIColumn(1,10,hit->GetWeight());
+	Ana->FillNtupleDColumn(1,10,hit->GetWeight());
 	Ana->FillNtupleDColumn(1,11,hit->GetFinalPosition().getX()/m);
 	Ana->FillNtupleDColumn(1,12,hit->GetFinalPosition().getY()/m);
 	Ana->FillNtupleDColumn(1,13,hit->GetFinalPosition().getZ()/m);
@@ -194,7 +195,7 @@ void PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
     //output.flush();
   //  hitsCollection->clear();
   //}
-//  Ana->Write();
+//  Ana->Flush();
 }
 
 void PhononSensitivity::SetOutputFile(const G4String &fn) {

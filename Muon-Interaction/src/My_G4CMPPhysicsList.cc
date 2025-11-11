@@ -46,7 +46,7 @@ My_G4CMPPhysicsList::My_G4CMPPhysicsList(G4int verbose) : G4VModularPhysicsList(
   defaultCutValue = DBL_MIN;	// 100*mm;
 
   RegisterPhysics(new G4CMPPhysics);		// Phonons and charge-carriers
-  RegisterPhysics(new G4EmStandardPhysics);
+/*  RegisterPhysics(new G4EmStandardPhysics);
 
   // Synchroton Radiation & GN Physics
   RegisterPhysics( new G4EmExtraPhysics);
@@ -67,14 +67,14 @@ My_G4CMPPhysicsList::My_G4CMPPhysicsList(G4int verbose) : G4VModularPhysicsList(
   RegisterPhysics( new G4IonPhysics);
 
   // Neutron tracking cut
-  RegisterPhysics( new G4NeutronTrackingCut);
+  RegisterPhysics( new G4NeutronTrackingCut);*/
 }
 
 My_G4CMPPhysicsList::~My_G4CMPPhysicsList() {;}
 
 // These values are used as the default production thresholds
 // for the world volume.
-/*
+
 void My_G4CMPPhysicsList::ConstructParticle()
 {
  G4MuonPlus::MuonPlusDefinition();
@@ -90,7 +90,7 @@ void My_G4CMPPhysicsList::ConstructParticle()
 
  G4VModularPhysicsList::ConstructParticle();
 }
-
+/*
 void My_G4CMPPhysicsList::ConstructProcess()
 {
  G4ProcessManager *MuPlus=G4MuonPlus::MuonPlusDefinition()->GetProcessManager();

@@ -44,7 +44,7 @@ fout.open(G4CMP::DebuggingFileThread("Event_output.txt"),std::ios::app);
     }
 	fout<<eventID<<'\t'<<fEdep<<'\t'<<fNSecondaries<<'\t'<<fNPhononL<<'\t'<<fNPhononTF<<'\t'<<fNPhononTS<<std::endl;
 	fout.close();*/
- Ana->Write();
+// Ana->Write();
 }
 void MyEventAction::AddSteppingData(G4double E,G4double N,G4double NL,G4double NTF,G4double NTS) 
 {

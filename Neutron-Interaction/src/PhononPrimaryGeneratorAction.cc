@@ -185,7 +185,7 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 //  fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
  
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
-  ana->FillNtupleDColumn(0,0,G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID());
+  ana->FillNtupleIColumn(0,0,G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID());
   ana->FillNtupleIColumn(0,1,event->GetEventID());
   ana->FillNtupleIColumn(0,2,partType->GetPDGEncoding());
   ana->FillNtupleDColumn(0,3,E/MeV);
@@ -203,6 +203,8 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   fParticleGun->GetCurrentSource()->GetEneDist()->SetMonoEnergy(E);
   fParticleGun->SetParticleDefinition(partType);
   fParticleGun->GeneratePrimaryVertex(event);
+
+  std::cout<<event->GetEventID()<<std::endl;
 //  G4ThreeVector pos=fParticleGun->GetParticlePosition(), mom=fParticleGun->GetParticleMomentumDirection();
 //  G4double E=fParticleGun->GetParticleEnergy(), theta=std::acos(mom[2]/mom.mag()), phi=(mom[1]<0)?2*CLHEP::pi-std::acos(mom[0]/std::sqrt(mom[0]*mom[0]+mom[1]*mom[1])):std::acos(mom[0]/std::sqrt(mom[0]*mom[0]+mom[1]*mom[1]));
 }

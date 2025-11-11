@@ -17,12 +17,17 @@
 
 #include "G4CMPUtils.hh"
 #include "G4ParticleTypes.hh"
+#include "G4Threading.hh"
 
+#include "TFile.h"
+#include "TH1D.h"
+#include "TROOT.h"
 
 // std
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <string>
 
 PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
 {
@@ -36,11 +41,8 @@ PhononPrimaryGeneratorAction::PhononPrimaryGeneratorAction()// = default;
                   FatalException, msg);
       fout.close();
     }
- Tfin=new TFile("~/Data/Cosmic-Muon-Flux/555m/Muon_flux-v1.root","READ");
- fluxhist=(TH1D*)Tfin->Get("histEnergy");
- std::cout<<"\nSET\n";
 }
-PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();Tfin->Close();}
+PhononPrimaryGeneratorAction::~PhononPrimaryGeneratorAction(){fout.close();}
 void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 /*
   // --- masses
@@ -121,7 +123,16 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   dir[1]=std::sin(theta)*std::sin(phi);
   dir[2]=std::cos(theta);
   
-  G4double E,prob,thresh;
+  G4double prob,thresh,E=1;
+  ROOT::EnableThreadSafety();
+  G4ThreadLocal TFile *Tfin=nullptr;
+  G4ThreadLocal TH1D *fluxhist;
+//  std::ifstream fin;
+//  fin.open("trial.txt",std::ios::in);
+//  fin.close();
+//  Tfin=new TFile(std::string("~/Data/Cosmic-Muon-Flux/555m/Muon_flux-v1_T")+G4Threading::G4GetThreadId()+".root","READ");
+  Tfin=new TFile("~/Data/Cosmic-Muon-Flux/555m/Muon_flux-v1.root","READ");
+ fluxhist=(TH1D*)Tfin->Get("histEnergy");
 
   do
   {
@@ -138,14 +149,16 @@ void PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   fParticleGun->GetCurrentSource()->GetEneDist()->SetMonoEnergy(E);
   fParticleGun->SetParticleDefinition(partType);
   fParticleGun->GeneratePrimaryVertex(event);
+
+  Tfin->Close();
 //  G4ThreeVector pos=fParticleGun->GetParticlePosition(), mom=fParticleGun->GetParticleMomentumDirection();
 //  G4double E=fParticleGun->GetParticleEnergy(), theta=std::acos(mom[2]/mom.mag()), phi=(mom[1]<0)?2*CLHEP::pi-std::acos(mom[0]/std::sqrt(mom[0]*mom[0]+mom[1]*mom[1])):std::acos(mom[0]/std::sqrt(mom[0]*mom[0]+mom[1]*mom[1]));
 }
 
 // ---------- helpers ----------
 G4ThreeVector PhononPrimaryGeneratorAction::SampleDMVelocity_Galactic() const {
-  const G4double v0    = 220.0 * km / s;
-  const G4double vesc  = 533.0 * km / s;
+  const G4double v0    = 220.0 * km / CLHEP::s;
+  const G4double vesc  = 533.0 * km / CLHEP::s;
   const G4double sigma = v0 / std::sqrt(2.0);
 
   G4ThreeVector v;

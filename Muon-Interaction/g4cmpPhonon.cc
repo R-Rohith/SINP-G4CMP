@@ -31,13 +31,17 @@
 
 
 #include "TROOT.h"
+#include "TFile.h"
 #include "TApplication.h"
 
 //#include "CLHEP/Random/RanecuEngine.h"
 
 int main(int argc,char** argv)
 {
-// TApplication ROOT("ROOT_APP",NULL,NULL);
+ ROOT::EnableThreadSafety();
+  G4ThreadLocal TFile *Tfin=nullptr;
+  Tfin=new TFile("~/Data/Cosmic-Muon-Flux/555m/Muon_flux-v1.root","READ");
+  Tfin->Close();
  // Construct the run manager
  //
  

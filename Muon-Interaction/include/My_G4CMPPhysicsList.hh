@@ -30,7 +30,7 @@ public:
 
 public:
   void SetCuts();
-//  void ConstructParticle();
+  void ConstructParticle();
 //  void ConstructProcess();
 };
 

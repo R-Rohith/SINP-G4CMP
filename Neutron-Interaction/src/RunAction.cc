@@ -22,10 +22,8 @@ void RunAction::BeginOfRunAction(const G4Run*) {
   ana->FinishNtuple();*/
    
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
-//  if(IsMaster())
-//  {
-//  }
-   
+  ana->SetNtupleMerging(true);
+
   ana->CreateNtuple("Per_run_data","Per_run_data");
   ana->CreateNtupleIColumn("Run_ID");
   ana->CreateNtupleIColumn("Event_ID");
@@ -57,7 +55,7 @@ void RunAction::BeginOfRunAction(const G4Run*) {
   ana->CreateNtupleDColumn("Start_positionZ");
   ana->CreateNtupleDColumn("Start_time");
   ana->CreateNtupleDColumn("Deposited_energy");
-  ana->CreateNtupleIColumn("Event_ID");
+  ana->CreateNtupleDColumn("Weight");
   ana->CreateNtupleDColumn("Final_positionX");
   ana->CreateNtupleDColumn("Final_positionY");
   ana->CreateNtupleDColumn("Final_positionZ");
