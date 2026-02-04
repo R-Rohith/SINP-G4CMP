@@ -21,6 +21,9 @@
 
 #include "G4LatticePhysical.hh"
 
+#include "FTFP_BERT.hh"
+#include "G4CMPPhysics.hh"
+
 int main(int argc,char** argv)
 {
 //--------checkers-----------
@@ -37,6 +40,8 @@ fInverse = fOrient.inverse();
   //
   G4RunManager * runManager = G4RunManagerFactory::CreateRunManager();
 
+  
+
   // Set mandatory initialization classes
   //
   Caustic_PhononDetectorConstruction* detector = new Caustic_PhononDetectorConstruction();
@@ -45,6 +50,11 @@ fInverse = fOrient.inverse();
   G4VUserPhysicsList* physics = new G4CMPPhysicsList();
   physics->SetCuts();
   runManager->SetUserInitialization(physics);
+
+  FTFP_BERT* physics2 = new FTFP_BERT;
+  physics2->RegisterPhysics(new G4CMPPhysics);
+  physics2->SetCuts();
+  runManager->SetUserInitialization(physics2);
   
   // Set user action classes (different for Geant4 10.0)
   //
@@ -77,6 +87,8 @@ fInverse = fOrient.inverse();
 
   delete visManager;
   delete runManager;
-  
+  //std::cout<<"The file is finish"<<std::endl;
   return 0;
+  //std::cout<<"The file is finish"<<std::endl;
+  
 }

@@ -29,7 +29,9 @@ void TransFast(const TString& fileName) {
   while (1) {
 
      in>>EventID>>TrackID>>Name_Phonon>>X_f>>Y_f>>Z_f;
+     cout << "Name_phonon: " << Name_Phonon << endl;
      if(Name_Phonon=="phononTF"){
+      cout << "I am inside filling loop" << endl;
      FCaustics->Fill(X_f*1000,Y_f*1000);
     }
      if (!in.good()) break;
@@ -102,7 +104,7 @@ void TransFast_and_Slow(const TString& fileName) {
   Double_t start_X,start_Y,start_Z;
   //Read in the phonons from the file
   while (1) {
-
+     cout << "X_f: " << X_f << " , Y_f: " << Y_f << endl;
      in>>EventID>>TrackID>>Name_Phonon>>X_f>>Y_f>>Z_f
      >>start_X>>start_Y>>start_Z;
 

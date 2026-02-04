@@ -56,9 +56,9 @@ void Caustic_PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
 	     << hit->GetFinalPosition().getY()/m << '\t'
 	     << hit->GetFinalPosition().getZ()/m << '\t'
 	     << hit->GetStartPosition().getX()/mm << ' '
-             << hit->GetStartPosition().getY()/mm << ' '
-             << hit->GetStartPosition().getZ()/mm << ' '
-//	    << hit->GetEnergyDeposit()/eV<<'\t'
+       << hit->GetStartPosition().getY()/mm << ' '
+       << hit->GetStartPosition().getZ()/mm << ' '
+	     << hit->GetEnergyDeposit()/eV<<'\t'
 //	    <<  hit->GetStartPosition().getX()/mm* hit->GetStartPosition().getX()/mm+ hit->GetStartPosition().getY()/mm* hit->GetStartPosition().getY()/mm
 	     << std::endl;
     }

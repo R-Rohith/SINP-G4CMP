@@ -12,11 +12,13 @@
 #include "G4Event.hh"
 #include "G4Geantino.hh"
 #include "G4ParticleGun.hh"
+#include "G4Electron.hh" // check
 #include "G4RandomDirection.hh"
 #include "G4PhononTransFast.hh"
 #include "G4PhononTransSlow.hh"
 #include "G4PhononLong.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4CMPEqEMField.hh"
 
 #include <cmath>
 #define MATH_PI 3.14159265359
@@ -24,6 +26,7 @@
 using namespace std;
 
 Caustic_PhononPrimaryGeneratorAction::Caustic_PhononPrimaryGeneratorAction() {
+
 
 fParticleGun  = new G4GeneralParticleSource();
 
@@ -50,6 +53,7 @@ void Caustic_PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 }
   else{
   fParticleGun->SetParticleDefinition(G4PhononTransSlow::Definition());
+  // fParticleGun->SetParticleDefinition(G4Electron::Definition());
   // fParticleGun->SetParticleDefinition(G4PhononLong::Definition());
   // If you are interested in Longitudinal phonons.
   // You only need to uncomment and comment on the other fParticleGun.
