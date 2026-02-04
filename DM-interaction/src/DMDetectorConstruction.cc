@@ -14,8 +14,8 @@
 // 20221006  Remove unused features; add phonon sensor pad with use of
 //		G4CMPPhononElectrode to demonstrate KaplanQP.
 
-#include "PhononDetectorConstruction.hh"
-#include "PhononSensitivity.hh"
+#include "DMDetectorConstruction.hh"
+#include "DMSensitivity.hh"
 #include "G4CMPLogicalBorderSurface.hh"
 #include "G4CMPPhononElectrode.hh"
 #include "G4CMPSurfaceProperty.hh"
@@ -45,21 +45,21 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-PhononDetectorConstruction::PhononDetectorConstruction()
+DMDetectorConstruction::DMDetectorConstruction()
   : fLiquidHelium(0), fTungsten(0), fCaWO4(0),
     fWorldPhys(0), topSurfProp(0), wallSurfProp(0),
     electrodeSensitivity(0), fConstructed(false), fpSubstrateLV(0) {;}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-PhononDetectorConstruction::~PhononDetectorConstruction() {
+DMDetectorConstruction::~DMDetectorConstruction() {
   delete topSurfProp;
   delete wallSurfProp;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-G4VPhysicalVolume* PhononDetectorConstruction::Construct()
+G4VPhysicalVolume* DMDetectorConstruction::Construct()
 {
   if (fConstructed) {
     if (!G4RunManager::IfGeometryHasBeenDestroyed()) {
@@ -86,22 +86,20 @@ G4VPhysicalVolume* PhononDetectorConstruction::Construct()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
  
-void PhononDetectorConstruction::ConstructSDandField() {
-
+void DMDetectorConstruction::ConstructSDandField() {
   G4SDManager* SDman = G4SDManager::GetSDMpointer();
  
-  PhononSensitivity* electrodeSD
-    = new PhononSensitivity("PhononElectrode");
+  DMSensitivity* electrodeSD
+    = new DMSensitivity("PhononElectrode");
  
   SDman->AddNewDetector(electrodeSD);
   fpSubstrateLV->SetSensitiveDetector(electrodeSD);
-
 }
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-void PhononDetectorConstruction::DefineMaterials()
+void DMDetectorConstruction::DefineMaterials()
 { 
   G4NistManager* nistManager = G4NistManager::Instance();
 
@@ -115,20 +113,18 @@ void PhononDetectorConstruction::DefineMaterials()
   fCaWO4->AddElement(elCa, 1);
   fCaWO4->AddElement(elW, 1);
   fCaWO4->AddElement(elO, 4);
-
-  fVacuum = nistManager->FindOrBuildMaterial("G4_Galactic");
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
 
-void PhononDetectorConstruction::SetupGeometry()
+void DMDetectorConstruction::SetupGeometry()
 {
   //     
   // World
   //
-  G4VSolid* worldSolid = new G4Box("World",15.*cm,15.*cm,5.*cm);
+  G4VSolid* worldSolid = new G4Box("World",5.*cm,5.*cm,5.*cm);
   G4LogicalVolume* worldLogical =
-    new G4LogicalVolume(worldSolid,fVacuum,"World");
+    new G4LogicalVolume(worldSolid,fLiquidHelium,"World");
   worldLogical->SetUserLimits(new G4UserLimits(10*mm, DBL_MAX, DBL_MAX, 0, 0));
   fWorldPhys = new G4PVPlacement(0,G4ThreeVector(),worldLogical,"World",0,
                                  false,0);
@@ -231,7 +227,7 @@ void PhononDetectorConstruction::SetupGeometry()
 
 // Attach material properties and electrode/sensor handler to surface
 
-void PhononDetectorConstruction::
+void DMDetectorConstruction::
 AttachPhononSensor(G4CMPSurfaceProperty *surfProp) {
   if (!surfProp) return;		// No surface, nothing to do
 

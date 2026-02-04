@@ -22,7 +22,7 @@ void RunAction::BeginOfRunAction(const G4Run*) {
   ana->FinishNtuple();*/
    
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
-  ana->SetNtupleMerging(true);
+  ana->SetCompressionLevel(6);
 
   ana->CreateNtuple("Per_run_data","Per_run_data");
   ana->CreateNtupleIColumn("Run_ID");
