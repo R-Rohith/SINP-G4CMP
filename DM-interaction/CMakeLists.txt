@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(g4cmpPhonon)
+project(DM-interaction)
 
 #----------------------------------------------------------------------------
 # Find G4CMP package -- NOTE: Assumes user has run g4cmp_env.*sh script!
@@ -66,12 +66,12 @@ if(USE_GEANT4_STATIC_LIBS)
 else()
     add_library(phononLib SHARED ${phonon_SOURCES})
 endif()
-set_target_properties(phononLib PROPERTIES OUTPUT_NAME g4cmpPhonon)
+set_target_properties(phononLib PROPERTIES OUTPUT_NAME DM-interaction)
 
 target_link_libraries(phononLib ${G4CMP_LIBRARIES} ${Geant4_LIBRARIES})
 
-add_executable(g4cmpPhonon g4cmpPhonon.cc)
-target_link_libraries(g4cmpPhonon phononLib) # Arrow::arrow_shared Parquet::parquet_shared)
+add_executable(DM-interaction DM-interaction.cc)
+target_link_libraries(DM-interaction phononLib) # Arrow::arrow_shared Parquet::parquet_shared)
 
 install(TARGETS phononLib DESTINATION lib)
-install(TARGETS g4cmpPhonon DESTINATION bin)
+install(TARGETS DM-interaction DESTINATION bin)
