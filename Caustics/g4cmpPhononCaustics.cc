@@ -22,6 +22,7 @@
 #include "G4LatticePhysical.hh"
 
 #include "FTFP_BERT.hh"
+#include "QGSP_BIC_HP.hh"
 #include "G4CMPPhysics.hh"
 
 int main(int argc,char** argv)
@@ -55,6 +56,11 @@ fInverse = fOrient.inverse();
   physics2->RegisterPhysics(new G4CMPPhysics);
   physics2->SetCuts();
   runManager->SetUserInitialization(physics2);
+
+  QGSP_BIC_HP* physics3 = new QGSP_BIC_HP;
+  physics3->RegisterPhysics(new G4CMPPhysics);
+  physics3->SetCuts();
+  runManager->SetUserInitialization(physics3);
   
   // Set user action classes (different for Geant4 10.0)
   //
