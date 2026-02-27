@@ -1,5 +1,5 @@
 # SINP-G4CMP
-A repository for simulations of phonon  transport and TES response in cryogenic detectors.
+A repository for simulations of phonon transport and TES response in cryogenic detectors.
 
 ## How to use the caustics code
 - clone the repository
