@@ -114,6 +114,7 @@ void TransFast_and_Slow(const TString& fileName) {
 
      Caustics->Fill(X_f*1000,Y_f*1000);
      hEnergy->Fill(Edep);
+    //  if (Edep)
      if (!in.good()) break;
   nlines++;
   }
