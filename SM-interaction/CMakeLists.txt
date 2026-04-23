@@ -80,3 +80,32 @@ target_link_libraries(SM-interaction SMLib ${ROOT_LIBRARIES})
 
 install(TARGETS SMLib DESTINATION lib)
 install(TARGETS SM-interaction DESTINATION bin)
+
+#----------------------------------------------------------------------------
+# Copy all scripts/helpers to the build directory, i.e. the directory in which we
+# build. This is so that we can run the executable directly because it
+# relies on these scripts being in the current working directory.
+#
+set(NEEDED_FILES
+  run.mac
+  extract_data.C
+  Multirun.sh
+  #  vis.mac
+  )
+
+  foreach(_file ${NEEDED_FILES})
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/${_file}
+    ${PROJECT_BINARY_DIR}/${_file}
+    COPYONLY
+    )
+endforeach()
+add_custom_command(
+	TARGET SM-interaction
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    	    ${PROJECT_SOURCE_DIR}/../Utilities # Source directory
+            ${PROJECT_BINARY_DIR}/Utilities # Destination directory
+    COMMENT "Copying Utilities directory to build output."
+)
+#configure_file(${PROJECT_SOURCE_DIR}/../Utilities ${PROJECT_BINARY_DIR}/Utilities COPYONLY)
