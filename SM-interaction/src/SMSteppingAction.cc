@@ -2,7 +2,6 @@
 #include "G4Step.hh"
 #include "G4Track.hh"
 #include "G4SystemOfUnits.hh"
-#include "SMSteppingAction.hh"
 #include "G4EventManager.hh"
 #include "SMEventAction.hh"
 #include "G4PhononLong.hh"
@@ -10,6 +9,9 @@
 #include "G4PhononTransSlow.hh"
 
 #include <cmath>
+
+#include "SMSteppingAction.hh"
+#include "SMConfigManager.hh"
 
 SMSteppingAction::SMSteppingAction(SMEventAction* eventAction)
  : G4UserSteppingAction(),
@@ -20,8 +22,8 @@ SMSteppingAction::~SMSteppingAction(){}
 
 void SMSteppingAction::UserSteppingAction(const G4Step* step) 
 {
- if(std::abs(step->GetTrack()->GetDefinition()->GetPDGEncoding())!=2112)return;
- G4double edep = step->GetTotalEnergyDeposit();
+ if(std::abs(step->GetTrack()->GetDefinition()->GetPDGEncoding())!=SMConfigManager::GetPrimPartPDG())return;
+ G4double edep = step->GetTotalEnergyDeposit()/eV;
 // G4ThreeVector pos = step->GetPreStepPoint()->GetPosition();
  const std::vector<const G4Track*>* secondaries = step->GetSecondaryInCurrentStep();
  G4double weight=0,NphononL=0,NphononTF=0,NphononTS=0;

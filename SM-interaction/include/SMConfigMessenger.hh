@@ -30,7 +30,8 @@ public:
 
 private:
   SMConfigManager* theManager;
-  G4UIcmdWithAString* hitsCmd;
+  G4UIcmdWithAString *hitsCmd, *PrimPartTypeCmd, *PrimPartFluxFilenameCmd, *PrimPartFluxHistnameCmd;
+  G4UIcmdWithADoubleAndUnit *PrimPartEnergyCmd;
 
 private:
   SMConfigMessenger(const SMConfigMessenger&);	// Copying is forbidden

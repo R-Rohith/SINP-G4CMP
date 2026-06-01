@@ -14,20 +14,27 @@
 #include "DMConfigMessenger.hh"
 #include "DMConfigManager.hh"
 #include "G4UIcmdWithAString.hh"
+#include "G4UIcmdWith3VectorAndUnit.hh"
+#include "G4UIcmdWithADoubleAndUnit.hh"
 
 
 // Constructor and destructor
 
 DMConfigMessenger::DMConfigMessenger(DMConfigManager* mgr)
-  : G4UImessenger("/g4cmp/", "User configuration for G4CMP phonon example"),
+  : G4UImessenger("/userconfig/", "User configuration for G4CMP phonon example"),
     theManager(mgr), hitsCmd(0) {
   hitsCmd = CreateCommand<G4UIcmdWithAString>("HitsFile",
 			      "Set filename for output of phonon hit locations");
+
+  VertexVectorCmd = CreateCommand<G4UIcmdWith3VectorAndUnit>("VertexVector","Set vertex position of energy depositions");
+  VertexEnergyCmd = CreateCommand<G4UIcmdWithADoubleAndUnit>("VertexEnergy","Set vertex energy deposition");
 }
 
 
 DMConfigMessenger::~DMConfigMessenger() {
-  delete hitsCmd; hitsCmd=0;
+  delete hitsCmd; hitsCmd=0; 
+  delete VertexVectorCmd; VertexVectorCmd=0;
+  delete VertexVectorCmd; VertexVectorCmd=0;
 }
 
 
@@ -35,4 +42,6 @@ DMConfigMessenger::~DMConfigMessenger() {
 
 void DMConfigMessenger::SetNewValue(G4UIcommand* cmd, G4String value) {
   if (cmd == hitsCmd) theManager->SetHitOutput(value);
+  else if (cmd==VertexVectorCmd) theManager->SetVertexVector(VertexVectorCmd->GetNew3VectorValue(value));
+  else if (cmd==VertexEnergyCmd) theManager->SetVertexEnergy(VertexEnergyCmd->GetNewDoubleValue(value));
 }

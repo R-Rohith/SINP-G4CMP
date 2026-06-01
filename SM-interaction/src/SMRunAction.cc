@@ -8,18 +8,6 @@ SMRunAction::SMRunAction() : G4UserRunAction() {}
 SMRunAction::~SMRunAction() = default;
 
 void SMRunAction::BeginOfRunAction(const G4Run*) {
-/*  auto* ana = G4AnalysisManager::Instance();
-  ana->OpenFile("dm_events.root");
-
-  ana->CreateNtuple("dm","per-event");
-  ana->CreateNtupleIColumn("event_id");
-  ana->CreateNtupleDColumn("ER_eV");
-  ana->CreateNtupleDColumn("theta_rad");
-  ana->CreateNtupleDColumn("v_kms");
-  ana->CreateNtupleDColumn("x_cm");
-  ana->CreateNtupleDColumn("y_cm");
-  ana->CreateNtupleDColumn("z_cm");
-  ana->FinishNtuple();*/
    
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
   ana->SetCompressionLevel(6);
@@ -62,7 +50,7 @@ void SMRunAction::BeginOfRunAction(const G4Run*) {
   ana->CreateNtupleDColumn("Final_time");
   ana->FinishNtuple();
 
-  ana->OpenFile("Generator_output");
+  ana->OpenFile("Simulation_output");
 }
 
 void SMRunAction::EndOfRunAction(const G4Run*) {

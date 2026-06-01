@@ -23,4 +23,5 @@ private:
   G4GeneralParticleSource *fParticleGun;
   TFile *PrimFluxFile;
   TH1D *PrimFlux;
+  G4double PrimPartEnergy;
 };

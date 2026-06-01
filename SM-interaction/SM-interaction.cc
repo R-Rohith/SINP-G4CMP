@@ -38,8 +38,12 @@ int main(int argc,char** argv)
 {
 // To prevent errors from opening same .root file in multiple threads
  ROOT::EnableThreadSafety();
- TFile *fin=TFile::Open("PrimFlux.root");
- fin->Close();
+ if(strcmp(SMConfigManager::GetPrimPartFluxFilename(),"empty")!=0)
+ {
+	 TFile *fin=TFile::Open(SMConfigManager::GetPrimPartFluxFilename());
+	 fin->Close();
+ }
+ else std::cout<<"\n SM-interaction.cc: No primary particle flux provided!!\n";
 
  // Construct the run manager
  //

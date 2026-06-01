@@ -1,4 +1,5 @@
 #include "DMPrimaryGeneratorAction.hh"
+#include "DMConfigManager.hh"
 
 // --- G4CMP
 #include "G4CMPEnergyPartition.hh"
@@ -30,7 +31,7 @@ DMPrimaryGeneratorAction::DMPrimaryGeneratorAction()// = default;
 DMPrimaryGeneratorAction::~DMPrimaryGeneratorAction(){fout.close();}
 void DMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   // 1) DM kinematics
-  const G4double m_DM = 1.0 * GeV;
+/*  const G4double m_DM = 1.0 * GeV;
   G4double rand=G4UniformRand();
   G4double m_T;
   int PDG_A = 16008;
@@ -51,8 +52,16 @@ void DMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 
   // 2) Sample vertex inside cylinder (R=2 cm, H=4 cm, centered)
   const G4ThreeVector pos = SampleEventVertex();
-
+  
   G4CMPEnergyPartition part(pos);
+*/
+//----For Abhikamya-------
+  const G4ThreeVector pos=DMConfigManager::GetVertexVector();
+  G4CMPEnergyPartition part(pos);  
+//std::cout<<"All Okay\n";
+  const G4double m_DM=0,v=0,theta=0,E_R=DMConfigManager::GetVertexEnergy();
+  G4int PDG_A=16008;
+//---------------------------
   part.DoPartition(/*PDGcode=*/PDG_A, /*Etotal=*/E_R, /*eNIEL=*/0.0);
   //std::cout<<"RECOIL Energy: "<<E_R/eV<<std::endl;
   // grab the generated secondaries as primaries

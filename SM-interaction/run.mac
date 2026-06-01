@@ -1,5 +1,5 @@
 /run/numberOfThreads 30
-/run/numberOfEventsPerThread 1
+#/run/numberOfEventsPerThread 1
 /run/initialize
 
 #/gps/particle mu-

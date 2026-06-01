@@ -1,4 +1,5 @@
 #include "SMPrimaryGeneratorAction.hh"
+#include "SMConfigManager.hh"
 
 // G4CMP
 #include "G4CMPEnergyPartition.hh"
@@ -30,48 +31,49 @@
 
 
 SMPrimaryGeneratorAction::SMPrimaryGeneratorAction()// = default;
+: PrimPartEnergy(0), PrimFluxFile(NULL), PrimFlux(NULL)
 {
   fParticleGun  = new G4GeneralParticleSource();
-  
-  PrimFluxFile=TFile::Open("PrimFlux.root"); 
-  PrimFlux=(TH1D*)PrimFluxFile->Get("histNeutronEnergy");
+  if(strcmp(SMConfigManager::GetPrimPartFluxFilename(),"empty")==0)
+	PrimPartEnergy=SMConfigManager::GetPrimPartEnergy();
+  else
+  {
+	PrimFluxFile=TFile::Open(SMConfigManager::GetPrimPartFluxFilename()); 
+	PrimFlux=(TH1D*)PrimFluxFile->Get(SMConfigManager::GetPrimPartFluxHistname());
+  }
 
 }
 SMPrimaryGeneratorAction::~SMPrimaryGeneratorAction()
 {
-	PrimFluxFile->Close();
+//	PrimFluxFile->Close();
 }
 void SMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 
-	/*
-	 //--Muon as primary-------
-
-  G4double rand=G4UniformRand();
-  G4ParticleDefinition *partType;
-  if(rand<0.585)
+    G4ParticleDefinition *partType;
+  G4ThreeVector pos, dir;
+  G4double E, theta, phi;
+  if(strcmp(SMConfigManager::GetPrimPartType(),"muon")==0)   //--Muon as primary-------
+  {
+  if(G4UniformRand()<0.585)
 	  partType=G4MuonMinus::Definition();
   else
 	  partType=G4MuonPlus::Definition();
-  G4ThreeVector pos, dir;
   G4double r=(11+2+1)*std::sqrt(G4UniformRand())*cm,phiPos=2*CLHEP::pi*G4UniformRand();	//--R_max=(radius of cone with h=4cm & theta=70deg + radius of crystal + lateral displacement of muons)
   pos[0]=r*std::cos(phiPos);
   pos[1]=r*std::sin(phiPos);
   pos[2]=4*cm;	//--The elevation of the muon source surface
-  G4double E=200e3*MeV, theta=CLHEP::pi-70*CLHEP::pi/180*G4UniformRand(), phi=2*CLHEP::pi*G4UniformRand();
+  if(PrimFlux==NULL)
+	  E=PrimPartEnergy;
+  else
+	  E=PrimFlux->GetRandom();
+  theta=CLHEP::pi-70*CLHEP::pi/180*G4UniformRand();
+  phi=2*CLHEP::pi*G4UniformRand();
   dir[0]=std::sin(theta)*std::cos(phi);
   dir[1]=std::sin(theta)*std::sin(phi);
   dir[2]=std::cos(theta);
-
-  do
-  {
-	  E=1e4*G4UniformRand();
-	  G4double prob=G4UniformRand(), thresh=fluxhist->GetBinContent(fluxhist->GetBin(E));
-  }while(prob<=thresh);
-  E*=MeV;*/
-
-//--Neutron as primary-------
-
-  G4ParticleDefinition *partType;
+  }
+  else if(strcmp(SMConfigManager::GetPrimPartType(),"neutron")==0)  //--Neutron as primary-------
+  {std::cout<<SMConfigManager::GetPrimPartType()<<std::endl;
   if(G4UniformRand()<0.5)
    partType=G4AntiNeutron::Definition();
   else
@@ -83,7 +85,12 @@ void SMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   pos[0]=r*std::sin(thetaPos)*std::cos(phiPos);
   pos[1]=r*std::sin(thetaPos)*std::sin(phiPos);
   pos[2]=r*std::cos(thetaPos);
-  G4double E=PrimFlux->GetRandom(), theta=CLHEP::pi*G4UniformRand(), phi=2*CLHEP::pi*G4UniformRand();
+  if(PrimFlux==NULL)
+	  E=PrimPartEnergy;
+  else
+	  E=PrimFlux->GetRandom(); 
+  theta=CLHEP::pi*G4UniformRand();
+  phi=2*CLHEP::pi*G4UniformRand();
   dir[0]=r*std::sin(theta)*std::cos(phi)-pos[0];
   dir[1]=r*std::sin(theta)*std::sin(phi)-pos[1];
   dir[2]=r*std::cos(theta)-pos[2];
@@ -92,8 +99,33 @@ void SMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   dir[0]/=dirmag;
   dir[1]/=dirmag;
   dir[2]/=dirmag;
+  }
+  else if(strcmp(SMConfigManager::GetPrimPartType(),"gamma")==0) //--Gamma as primary (default for now)-------
+  {
+	 partType=G4Gamma::Definition();
+  
 
-//  fout<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
+  G4double r=4*cm,phiPos=2*CLHEP::pi*G4UniformRand(),thetaPos=CLHEP::pi*G4UniformRand();	
+  pos[0]=r*std::sin(thetaPos)*std::cos(phiPos);
+  pos[1]=r*std::sin(thetaPos)*std::sin(phiPos);
+  pos[2]=r*std::cos(thetaPos);
+  if(PrimFlux==NULL)
+	  E=PrimPartEnergy;
+  else
+	  E=PrimFlux->GetRandom(); 
+  theta=CLHEP::pi*G4UniformRand();
+  phi=2*CLHEP::pi*G4UniformRand();
+  dir[0]=r*std::sin(theta)*std::cos(phi)-pos[0];
+  dir[1]=r*std::sin(theta)*std::sin(phi)-pos[1];
+  dir[2]=r*std::cos(theta)-pos[2];
+  G4double dirmag=std::sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
+  if(dirmag==0) std::cout<<"\n\n--Uh Oh... divide by zero------------\n\n";
+  dir[0]/=dirmag;
+  dir[1]/=dirmag;
+  dir[2]/=dirmag;
+  }
+  
+//  std::cout<<"PrimaryGenerator:"<<event->GetEventID()<<'\t'<<partType->GetPDGEncoding()<<'\t'<<E/MeV<<'\t'<<pos[0]/cm<<'\t'<<pos[1]/cm<<'\t'<<pos[2]/cm<<'\t'<<theta<<'\t'<<phi<<'\t'<<dir[0]<<'\t'<<dir[1]<<'\t'<<dir[2]<<std::endl;
  
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
   ana->FillNtupleIColumn(0,0,G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID());

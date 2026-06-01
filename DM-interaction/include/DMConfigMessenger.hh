@@ -18,6 +18,8 @@
 
 class DMConfigManager;
 class G4UIcmdWithAString;
+class G4UIcmdWithADoubleAndUnit;
+class G4UIcmdWith3VectorAndUnit;
 class G4UIcommand;
 
 
@@ -31,6 +33,8 @@ public:
 private:
   DMConfigManager* theManager;
   G4UIcmdWithAString* hitsCmd;
+  G4UIcmdWith3VectorAndUnit* VertexVectorCmd;
+  G4UIcmdWithADoubleAndUnit* VertexEnergyCmd;
 
 private:
   DMConfigMessenger(const DMConfigMessenger&);	// Copying is forbidden

@@ -17,6 +17,7 @@
 // 20170816  M. Kelsey -- Extract hit filename from G4CMPConfigManager.
 
 #include "globals.hh"
+#include "G4ThreeVector.hh"
 
 class DMConfigMessenger;
 
@@ -33,6 +34,25 @@ public:
   static void SetHitOutput(const G4String& name)
     { Instance()->Hit_file=name; UpdateGeometry(); }
 
+//------For Abhikamya---------    
+  static const G4ThreeVector GetVertexVector()
+  {
+    return Instance()->VertexVector;
+  }
+  static const G4double GetVertexEnergy()
+  {
+    return Instance()->VertexEnergy;
+  }
+  static void SetVertexVector(G4ThreeVector pos)
+  {
+    Instance()->VertexVector=pos;
+  }
+  static void SetVertexEnergy(G4double energy)
+  {
+    Instance()->VertexEnergy=energy;
+  }
+
+
   static void UpdateGeometry();
 
 private:
@@ -46,6 +66,9 @@ private:
 
 private:
   G4String Hit_file;	// Output file of e/h hits ($G4CMP_HIT_FILE)
+
+  G4ThreeVector VertexVector;
+  G4double VertexEnergy;
 
   DMConfigMessenger* messenger;
 };

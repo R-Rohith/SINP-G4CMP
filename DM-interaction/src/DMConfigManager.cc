@@ -16,6 +16,8 @@
 #include "DMConfigManager.hh"
 #include "DMConfigMessenger.hh"
 #include "G4RunManager.hh"
+#include "G4SystemOfUnits.hh"
+
 #include <stdlib.h>
 
 
@@ -28,7 +30,7 @@ DMConfigManager* DMConfigManager::Instance() {
   return theInstance;
 }
 
-DMConfigManager::DMConfigManager(){;}
+DMConfigManager::DMConfigManager():VertexVector(G4ThreeVector(0,0,0)),VertexEnergy(0.011*eV),messenger(new DMConfigMessenger(this)){;}
 //  : Hit_file(getenv("G4CMP_HIT_FILE")?getenv("G4CMP_HIT_FILE"):"phonon_hits.txt"),
 //    messenger(new DMConfigMessenger(this)) {;}
 
