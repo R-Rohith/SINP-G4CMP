@@ -8,8 +8,11 @@
 #include "Caustic_PhononActionInitialization.hh"
 #include "Caustic_PhononPrimaryGeneratorAction.hh"
 #include "G4CMPStackingAction.hh"
+#include "EventAction.hh"
 
 void Caustic_PhononActionInitialization::Build() const {
+  auto eventAction = new EventAction();// This is added for TTree
   SetUserAction(new Caustic_PhononPrimaryGeneratorAction);
   SetUserAction(new G4CMPStackingAction);
+  SetUserAction(eventAction);// This is added for TTree
 }

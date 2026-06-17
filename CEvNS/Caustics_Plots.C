@@ -98,7 +98,7 @@ void TransFast_and_Slow(const TString& fileName) {
   TH2D *Caustics= new TH2D("Caustics",";x (mm);y (mm)",nBinsX,minX,maxX,nBinsY,minY,maxY);
   TH1D *hEnergy = new TH1D("hEnergy",
                          "Energy Deposition of all Phonons;Energy (eV);Counts",
-                         1000, 0,10000);
+                         1000, 1000,50000);
    Double_t Edep;
   Int_t nlines = 0;
   Int_t EventID=-1, TrackID=-1;
@@ -146,7 +146,7 @@ palette->SetX1NDC(0.88);
  Caustics->GetYaxis()->SetTitleOffset(1.2);
  Caustics->GetXaxis()->SetTitleOffset(1.2);
  c1->SetMargin(0.12,0.12,0.12,0.12);
- Caustics->GetZaxis()->SetRangeUser(0,5);
+ Caustics->GetZaxis()->SetRangeUser(0,5000);
  Caustics->GetZaxis()->SetMoreLogLabels();
   Caustics->Draw("colz");
  c1->SaveAs("Both.pdf");

@@ -26,9 +26,10 @@ public:
   virtual ~Caustic_PhononPrimaryGeneratorAction();
 
   public:
-    virtual void GeneratePrimaries(G4Event*);
+    virtual void GeneratePrimaries(G4Event* anEvent);
 
   private:
+     G4ThreeVector SampleEventVertex() const;
      TFile* fInputFile;
      TH1D*  fRecoilHist;
      G4GeneralParticleSource *fParticleGun;

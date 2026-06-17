@@ -41,9 +41,9 @@ fInverse = fOrient.inverse();
   // std::cout<<"Opening and closing root file in main"<<std::endl;
 // opening root file
   ROOT::EnableThreadSafety();
-    TFile* file = TFile::Open("/home/rohit-kumar/softwares/SINP-G4CMP/CEvNS/RecoilHistogram.root");
-    file->Close();
-    delete file;
+  TFile* file = TFile::Open("/home/ubuntu/SINP-G4CMP/CEvNS/RecoilHistogram.root");
+  file->Close();
+  delete file;
 
 //----------------------------------
   // Construct the run manager

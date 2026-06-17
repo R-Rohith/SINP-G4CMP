@@ -1,7 +1,7 @@
-/***********************************************************************\
+ /***********************************************************************\
  * This software is licensed under the terms of the GNU General Public *
  * License version 3 or later. See G4CMP/LICENSE for the full license. *
-\***********************************************************************/
+ \***********************************************************************/
 
 // 20241024 Israel Hernandez -- IIT, QSC and Fermilab
 // 20250101 Michael Kelsey -- Instantiate SD in ConstructSDandField();
@@ -132,7 +132,7 @@ void Caustic_PhononDetectorConstruction::Caustic_SetupGeometry()
 
   // The Substrate material where the phonons are propagated
 //  G4VSolid* SubstrateSolid= new G4Box("SubstrateSolid",0.2*cm,0.2*cm,0.2*cm);
-G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0.*deg, 360.*deg);
+G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 2.0*cm, 2.0*cm, 0.*deg, 360.*deg);
   G4LogicalVolume* SubstrateLogical1 =
     new G4LogicalVolume(SubstrateSolid,fCaWO4,"SubstrateLogical1");
 //    new G4LogicalVolume(SubstrateSolid,fCrystalMaterial,"SubstrateLogical1");
@@ -158,7 +158,7 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
   // Aluminum . This is where phonon hits are registered (Bolometer)
 //  G4VSolid* BolometerSolid= new G4Box("BolometerSolid",0.2*cm,0.2*cm,0.001*cm);
 //  G4VSolid* BolometerSolid= new G4Box("BolometerSolid",0.2*cm,0.2*cm,0.001*cm);
-  G4VSolid* BolometerSolid = new G4Tubs("BolometerSolid", 0., 0.2*cm, 0.001*cm, 0.*deg, 360.*deg);
+  G4VSolid* BolometerSolid = new G4Tubs("BolometerSolid", 0., 2.0*cm, 100.*nm, 0.*deg, 360.*deg);
 // G4Tubs* disk = new G4Tubs("disk", 0., (0.2+0.002)*cm, 0.001*cm, 0.*deg, 360.*deg);
 // G4Tubs* hollowcyl = new G4Tubs("hollowcyl", 0.2*cm, (0.2+0.002)*cm, 0.2*cm, 0.*deg, 360.*deg);
 // G4UnionSolid* union1 =new G4UnionSolid("union1",hollowcyl,disk,nullptr,G4ThreeVector(0,0,(0.2+0.001)*cm));
@@ -166,17 +166,37 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
   G4LogicalVolume* BolometerLogical =
     new G4LogicalVolume(BolometerSolid,fBolometer,"BolometerLogical");
   G4VPhysicalVolume* BolometerPhysical =
-    new G4PVPlacement(0, G4ThreeVector(0.,0.,0.201*cm), BolometerLogical,
+    new G4PVPlacement(0, G4ThreeVector(0.,0.,2.*cm+100.*nm), BolometerLogical,
 		      "BolometerPhysical",worldLogical,false,0,checkOverlaps);
 
   // Surface between bolometer and Substrate determines phonon reflection/absorption
   // Here We set 1.0 for total phonon absorption
   if (!fConstructed) {
+
+        const G4double GHz = 1e9 * hertz; 
+
+    //the following coefficients and cutoff values are not well-motivated
+    //the code below is used only to demonstrate how to set these values.
+    const std::vector<G4double> anhCoeffs = {0, 0, 0, 0, 0, 1.51e-14};
+    const std::vector<G4double> diffCoeffs =
+      {5.88e-2, 7.83e-4, -2.47e-6, 1.71e-8, -2.98e-11};
+    const std::vector<G4double> specCoeffs =
+      {0,928, -2.03e-4, -3.21e-6, 3.1e-9, 2.9e-13};
+    
+    /// why do we need this?
+    const G4double anhCutoff = 520., reflCutoff = 350.;   // Units external
+
     topSurfProp = new G4CMPSurfaceProperty("TopAlSurf", 1.0, 0.0, 0.0, 0.0,
 					  	        0.9, 1.0, 0.3, 0.0);
-    AttachPhononSensor(topSurfProp);
+    topSurfProp->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs,
+					 diffCoeffs, specCoeffs, GHz, GHz, GHz);
+    AttachPhononSensor(topSurfProp); // Phono sensor properties are added through this function.
+
     wallSurfProp = new G4CMPSurfaceProperty("WallSurf", 0.0, 1.0, 0.0, 0.0,
 					    	        0.0, 1.0, 0.3, 0.0);
+    wallSurfProp->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs,
+					  diffCoeffs, specCoeffs, GHz, GHz,GHz);
+
 
   }
 
@@ -195,7 +215,7 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
   BolometerLogical->SetVisAttributes(simpleDetectorAtt);
 }
 
-void PhononDetectorConstruction::
+void Caustic_PhononDetectorConstruction::
 AttachPhononSensor(G4CMPSurfaceProperty *surfProp) {
   if (!surfProp) return;		// No surface, nothing to do
 
