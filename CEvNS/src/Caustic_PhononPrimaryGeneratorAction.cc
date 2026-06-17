@@ -6,7 +6,7 @@
 
 
 // 20241024 Israel Hernandez -- IIT, QSC and Fermilab
-
+// Added a line to check git commands.
 #include "Caustic_PhononPrimaryGeneratorAction.hh"
 
 #include "G4CMPEnergyPartition.hh"
