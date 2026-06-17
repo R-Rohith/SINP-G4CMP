@@ -33,9 +33,9 @@ Caustic_PhononPrimaryGeneratorAction::Caustic_PhononPrimaryGeneratorAction() {
 
 // cout<<"Before opening"<<endl;
 fParticleGun  = new G4GeneralParticleSource();
-cout<<"Before file selection"<<endl;
+// cout<<"Before file selection"<<endl;
 fInputFile = TFile::Open("/home/rohit-kumar/softwares/SINP-G4CMP/CEvNS/RecoilHistogram.root");
-cout<<"After file selection"<<endl;
+// cout<<"After file selection"<<endl;
 fRecoilHist = (TH1D*)fInputFile->Get("h_En");
 // cout<<"After opening"<<endl;
 }
@@ -73,7 +73,7 @@ void Caustic_PhononPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
   // You only need to uncomment and comment on the other fParticleGun.
   }
   // cout<<"Event Generation"<<endl;
-  G4double T_keV = fRecoilHist->GetRandom();
+  // G4double T_keV = fRecoilHist->GetRandom(); // This is to generate primaries from random histogram
   //G4double T_GeV = T_keV * 1e-6;
   fParticleGun->GetCurrentSource()->GetEneDist()->SetMonoEnergy(T_keV * keV);
   fParticleGun->GeneratePrimaryVertex(anEvent);

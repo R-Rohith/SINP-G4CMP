@@ -174,6 +174,7 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
   if (!fConstructed) {
     topSurfProp = new G4CMPSurfaceProperty("TopAlSurf", 1.0, 0.0, 0.0, 0.0,
 					  	        0.9, 1.0, 0.3, 0.0);
+    AttachPhononSensor(topSurfProp);
     wallSurfProp = new G4CMPSurfaceProperty("WallSurf", 0.0, 1.0, 0.0, 0.0,
 					    	        0.0, 1.0, 0.3, 0.0);
 
@@ -192,4 +193,27 @@ G4VSolid* SubstrateSolid = new G4Tubs("SubstrateSolid", 0.*cm, 0.2*cm, 0.2*cm, 0
   simpleBoxVisAtt->SetVisibility(true);
   SubstrateLogical1->SetVisAttributes(simpleBoxVisAtt);
   BolometerLogical->SetVisAttributes(simpleDetectorAtt);
+}
+
+void PhononDetectorConstruction::
+AttachPhononSensor(G4CMPSurfaceProperty *surfProp) {
+  if (!surfProp) return;		// No surface, nothing to do
+
+  // Specify properties of aluminum sensor, same on both detector faces
+  // See G4CMPPhononElectrode.hh or README.md for property keys
+
+  // Properties must be added to existing surface-property table
+  /// ask Sayantan about these values
+  auto sensorProp = surfProp->GetPhononMaterialPropertiesTablePointer();
+  sensorProp->AddConstProperty("filmAbsorption", 1.0);    // True sensor area
+  sensorProp->AddConstProperty("filmThickness", 200.*nm);
+  sensorProp->AddConstProperty("gapEnergy", 2.3e-6*eV); // \Delta=1.74 k_B T_c
+  sensorProp->AddConstProperty("lowQPLimit", 3.);
+  sensorProp->AddConstProperty("phononLifetime", 250.*ps);
+  sensorProp->AddConstProperty("phononLifetimeSlope", 0.25);
+  sensorProp->AddConstProperty("vSound", 5.2*km/s);
+  sensorProp->AddConstProperty("subgapAbsorption", 0.1);
+
+  // Attach electrode object to handle KaplanQP interface
+  surfProp->SetPhononElectrode(new G4CMPPhononElectrode);
 }
