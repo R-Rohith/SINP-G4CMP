@@ -14,9 +14,9 @@ def main():
 #    h2 = ROOT.TH2D("h_En","Analytical dsigma_dT; Energy [keV]; dsig_dT",100,0,10000)
    h1 = ROOT.TH1D("h1",
                "Sampler dsigma_dT;Energy [keV];d#sigma/dT",
-               100, 0, 10)
+               1000, 0, 100)
    ### folder where the input files live
-   inputfolder = "/home/rohit-kumar/softwares/SINP-G4CMP/CEvNS"
+   inputfolder = "/home/ubuntu/SINP-G4CMP/CEvNS"
    ### get the text file
    filename = "accepted_points.txt"
 

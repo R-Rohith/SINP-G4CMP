@@ -19,24 +19,57 @@
 #include "G4SDManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "Caustic_PhononConfigManager.hh"
+#include "EventAction.hh"
+#include "G4RunManager.hh"
 
 #include<iostream>
 #include "G4ThreeVector.hh"
+#include "TFile.h"
+#include "TTree.h"
+
 using namespace std;
 
-Caustic_PhononSensitivity::Caustic_PhononSensitivity(G4String name) :
-  G4CMPElectrodeSensitivity(name), fileName("") {
-  SetOutputFile(G4CMP::DebuggingFileThread(Caustic_PhononConfigManager::GetHitOutput()));
+// Caustic_PhononSensitivity::Caustic_PhononSensitivity(G4String name) :
+//   G4CMPElectrodeSensitivity(name), fileName("") {
+//   SetOutputFile(G4CMP::DebuggingFileThread(Caustic_PhononConfigManager::GetHitOutput()));
+// }
+
+//This Part is for TTree
+Caustic_PhononSensitivity::Caustic_PhononSensitivity(G4String name)
+: G4CMPElectrodeSensitivity(name)
+{
+    rootFile = new TFile(G4CMP::DebuggingFileThread("phononHits.root"),"RECREATE");
+
+    tree = new TTree("hits","Phonon hits");
+
+    tree->Branch("eventID",&eventID);
+    tree->Branch("trackID",&trackID);
+    tree->Branch("phononName",&phononName);
+    tree->Branch("final_x",&final_x);
+    tree->Branch("final_y",&final_y);
+    tree->Branch("final_z",&final_z);
+    tree->Branch("initial_x",&initial_x);
+    tree->Branch("initial_y",&initial_y);
+    tree->Branch("initial_z",&initial_z);
+    tree->Branch("edep",&edep);
+    tree->Branch("weight",&weight);
+
+    // tree->Branch("totalEdep",&totalEdep);
+    tree->Branch("recoilEnergy",&recoilEnergy);
 }
 
+// Caustic_PhononSensitivity::~Caustic_PhononSensitivity() {
+//   if (output.is_open()) output.close();
+//   if (!output.good()) {
+//     G4cerr << "Error closing output file, " << fileName << ".\n"
+//            << "Expect bad things like loss of data." << G4endl;
+//   }
+// }
 
-
-Caustic_PhononSensitivity::~Caustic_PhononSensitivity() {
-  if (output.is_open()) output.close();
-  if (!output.good()) {
-    G4cerr << "Error closing output file, " << fileName << ".\n"
-           << "Expect bad things like loss of data." << G4endl;
-  }
+Caustic_PhononSensitivity::~Caustic_PhononSensitivity()
+{
+    rootFile->Write();
+    rootFile->Close();
 }
 
 void Caustic_PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
@@ -46,23 +79,52 @@ void Caustic_PhononSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
 
   G4RunManager* runMan = G4RunManager::GetRunManager();
 
-  if (output.good()) {
-    // Saving in a txt file the Final Phonon Position.
-    for (G4CMPElectrodeHit* hit : *hitVec) {
-      output << runMan->GetCurrentEvent()->GetEventID() << '\t'
-	     << hit->GetTrackID() << '\t'
-	     << hit->GetParticleName() << '\t'
-	     << hit->GetFinalPosition().getX()/m << '\t'
-	     << hit->GetFinalPosition().getY()/m << '\t'
-	     << hit->GetFinalPosition().getZ()/m << '\t'
-	     << hit->GetStartPosition().getX()/mm << ' '
-       << hit->GetStartPosition().getY()/mm << ' '
-       << hit->GetStartPosition().getZ()/mm << ' '
-	     << hit->GetEnergyDeposit()/eV<<'\t'
-//	    <<  hit->GetStartPosition().getX()/mm* hit->GetStartPosition().getX()/mm+ hit->GetStartPosition().getY()/mm* hit->GetStartPosition().getY()/mm
-	     << std::endl;
+  totalEdep = 0;                                          //For TTree
+  eventID = runMan->GetCurrentEvent()->GetEventID();      //For TTree
+
+//   if (output.good()) {
+// // Saving in a txt file the Final Phonon Position.  
+//     for (G4CMPElectrodeHit* hit : *hitVec) {
+//       output << runMan->GetCurrentEvent()->GetEventID() << '\t'
+// 	     << hit->GetTrackID() << '\t'
+// 	     << hit->GetParticleName() << '\t'
+// 	     << hit->GetFinalPosition().getX()/m << '\t'
+// 	     << hit->GetFinalPosition().getY()/m << '\t'
+// 	     << hit->GetFinalPosition().getZ()/m << '\t'
+// 	     << hit->GetStartPosition().getX()/mm << ' '
+//        << hit->GetStartPosition().getY()/mm << ' '
+//        << hit->GetStartPosition().getZ()/mm << ' '
+// 	     << hit->GetEnergyDeposit()/eV<<'\t'
+//        <<hit->GetWeight()<<'\t'
+// //	    <<  hit->GetStartPosition().getX()/mm* hit->GetStartPosition().getX()/mm+ hit->GetStartPosition().getY()/mm* hit->GetStartPosition().getY()/mm
+// 	     << std::endl;
+//     }
+//   }
+  EventAction* eventAction =
+   (EventAction*)G4RunManager::GetRunManager()->GetUserEventAction();
+
+     recoilEnergy = eventAction->GetRecoilEnergy()/keV;
+    // std::cout<<recoilEnergy/keV<<std::endl;
+     for (G4CMPElectrodeHit* hit : *hitVec)
+    {
+    trackID = hit->GetTrackID();
+    phononName = hit->GetParticleName();
+
+    final_x = hit->GetFinalPosition().getX()/m;
+    final_y = hit->GetFinalPosition().getY()/m;
+    final_z = hit->GetFinalPosition().getZ()/m;
+
+    initial_x = hit->GetStartPosition().getX()/mm;
+    initial_y = hit->GetStartPosition().getY()/mm;
+    initial_z = hit->GetStartPosition().getZ()/mm;
+
+    edep = hit->GetEnergyDeposit()/eV;
+    weight = hit->GetWeight();
+
+    // totalEdep += edep * weight; 
+
+    tree->Fill();
     }
-  }
 }
 
 void Caustic_PhononSensitivity::SetOutputFile(const G4String &fn) {

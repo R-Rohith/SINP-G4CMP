@@ -28,6 +28,7 @@ public:
 private:
   void Caustic_DefineMaterials();
   void Caustic_SetupGeometry();
+  void AttachPhononSensor(G4CMPSurfaceProperty* surfProp);
 
 private:
   G4Material* fLiquidHelium;

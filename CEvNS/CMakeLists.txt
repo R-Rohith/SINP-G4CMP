@@ -53,6 +53,7 @@ set(Causticphonon_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Caustic_PhononDetectorConstruction.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Caustic_PhononPrimaryGeneratorAction.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Caustic_PhononSensitivity.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/EventAction.cc
 
     )
 
