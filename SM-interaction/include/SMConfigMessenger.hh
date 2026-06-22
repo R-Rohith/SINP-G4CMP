@@ -18,6 +18,8 @@
 
 class SMConfigManager;
 class G4UIcmdWithAString;
+class G4UIcmdWithAnInteger;
+class G4UIcmdWithADoubleAndUnit;
 class G4UIcommand;
 
 
@@ -31,6 +33,7 @@ public:
 private:
   SMConfigManager* theManager;
   G4UIcmdWithAString *hitsCmd, *PrimPartTypeCmd, *PrimPartFluxFilenameCmd, *PrimPartFluxHistnameCmd;
+  G4UIcmdWithAnInteger *CustomEventIDCmd;
   G4UIcmdWithADoubleAndUnit *PrimPartEnergyCmd;
 
 private:

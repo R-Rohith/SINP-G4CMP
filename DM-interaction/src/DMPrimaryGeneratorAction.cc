@@ -27,48 +27,43 @@
 
 DMPrimaryGeneratorAction::DMPrimaryGeneratorAction()// = default;
 {
+	CustomEdepFlag=DMConfigManager::GetCustomEdepFlag();
+	Emin=DMConfigManager::GetMinRecoilEnergy();
+	Emax=DMConfigManager::GetMaxRecoilEnergy();
 }
-DMPrimaryGeneratorAction::~DMPrimaryGeneratorAction(){fout.close();}
+DMPrimaryGeneratorAction::~DMPrimaryGeneratorAction(){;}
 void DMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
-  // 1) DM kinematics
-/*  const G4double m_DM = 1.0 * GeV;
+  event->SetEventID(DMConfigManager::GetCustomEventID()+event->GetEventID());
+  int PDG_A;
+  G4double m_DM=0,v=0,theta=0,E_R=0;
+  G4ThreeVector pos;
+
+  if(!CustomEdepFlag)
+  {
   G4double rand=G4UniformRand();
-  G4double m_T;
-  int PDG_A = 16008;
-  if(rand<(4/6)) {m_T  = 16.0 * CLHEP::amu_c2;PDG_A=16008;}		// recoil with oxygen
-  else if(rand<(5/6)) {m_T  = 32.0 * CLHEP::amu_c2;PDG_A=32040;}	// recoil with calcium 
-  else {m_T  = 184.0 * CLHEP::amu_c2;PDG_A=184074;}			// recoil with tungsten
-  // --- G4CMP partition (tell it “W-184” by AAAZZZ code)
-
-  const G4ThreeVector v_gal = SampleDMVelocity_Galactic();
-  const G4double v    = v_gal.mag();
-  const G4double beta = v / CLHEP::c_light;
-
-  const G4double cosTh = SampleThetaIsotropic();
-  const G4double theta = std::acos(cosTh);
-
-  const G4double mu  = (m_DM * m_T) / (m_DM + m_T);
-  const G4double E_R = 2.0 * (mu * mu / m_T) * (beta * beta) * (1.0 - cosTh);
-
-  // 2) Sample vertex inside cylinder (R=2 cm, H=4 cm, centered)
-  const G4ThreeVector pos = SampleEventVertex();
+  if(rand<(4/6)) PDG_A=16008;		// recoil with oxygen
+  else if(rand<(5/6)) PDG_A=32040;	// recoil with calcium 
+  else PDG_A=184074;			// recoil with tungsten
+  E_R=Emin+G4UniformRand()*(Emax-Emin);
+  pos = SampleEventVertex();
+  }
+  else
+  {
+  G4double rand=G4UniformRand();
+  if(rand<(4/6)) PDG_A=16008;		// recoil with oxygen
+  else if(rand<(5/6)) PDG_A=32040;	// recoil with calcium 
+  else PDG_A=184074;			// recoil with tungsten
+  E_R=DMConfigManager::GetVertexEnergy();
+  pos=DMConfigManager::GetVertexVector();
+  }
   
-  G4CMPEnergyPartition part(pos);
-*/
-//----For Abhikamya-------
-  const G4ThreeVector pos=DMConfigManager::GetVertexVector();
   G4CMPEnergyPartition part(pos);  
-//std::cout<<"All Okay\n";
-  const G4double m_DM=0,v=0,theta=0,E_R=DMConfigManager::GetVertexEnergy();
-  G4int PDG_A=16008;
-//---------------------------
   part.DoPartition(/*PDGcode=*/PDG_A, /*Etotal=*/E_R, /*eNIEL=*/0.0);
-  //std::cout<<"RECOIL Energy: "<<E_R/eV<<std::endl;
-  // grab the generated secondaries as primaries
-  std::vector<G4PrimaryParticle*> prims;
-  part.GetPrimaries(prims);
+  
+  std::vector<G4PrimaryParticle*> primaries;
+  part.GetPrimaries(primaries);
 
-  // optional: relabel phonon polarizations to chosen fractions
+/*  // optional: relabel phonon polarizations to chosen fractions
   const G4double fracTS = 0.50, fracTF = 0.35;
   long int no_of_sec=0,nL=0,nTF=0,nTS=0;
   for (auto* p : prims) {
@@ -83,6 +78,12 @@ void DMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
       else                            {p->SetParticleDefinition(G4PhononLong::Definition());nL++;}
     }
   }
+*/
+  long int no_of_sec=0,nL=0,nTF=0,nTS=0;
+  for (int i=0; i<primaries.size(); i++)
+    if(primaries[i]->GetParticleDefinition()==G4PhononLong::Definition()) nL++;
+    else if (primaries[i]->GetParticleDefinition()==G4PhononTransFast::Definition()) nTF++;
+    else if (primaries[i]->GetParticleDefinition()==G4PhononTransSlow::Definition()) nTS++;
 
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
   ana->FillNtupleIColumn(0,0,G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID());
@@ -95,14 +96,13 @@ void DMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   ana->FillNtupleDColumn(0,7,pos[2]/cm);
   ana->FillNtupleDColumn(0,8,theta);
   ana->FillNtupleDColumn(0,9,E_R/eV);
-  ana->FillNtupleDColumn(0,10,no_of_sec);
-  ana->FillNtupleDColumn(0,11,nL);
-  ana->FillNtupleDColumn(0,12,nTF);
-  ana->FillNtupleDColumn(0,13,nTS);
+  ana->FillNtupleDColumn(0,10,nL);
+  ana->FillNtupleDColumn(0,11,nTF);
+  ana->FillNtupleDColumn(0,12,nTS);
   ana->AddNtupleRow(0);
   // make vertex and attach primaries
   auto* vtx = new G4PrimaryVertex(pos, 0.*ns);
-  for (auto* p : prims) vtx->SetPrimary(p);
+  for (auto* p : primaries) vtx->SetPrimary(p);
   event->AddPrimaryVertex(vtx);
 }
 

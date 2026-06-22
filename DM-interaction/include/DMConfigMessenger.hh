@@ -18,6 +18,8 @@
 
 class DMConfigManager;
 class G4UIcmdWithAString;
+class G4UIcmdWithAnInteger;
+class G4UIcmdWithABool;
 class G4UIcmdWithADoubleAndUnit;
 class G4UIcmdWith3VectorAndUnit;
 class G4UIcommand;
@@ -33,6 +35,10 @@ public:
 private:
   DMConfigManager* theManager;
   G4UIcmdWithAString* hitsCmd;
+  G4UIcmdWithAnInteger *CustomEventIDCmd;
+  G4UIcmdWithABool* CustomEdepFlagCmd;
+  G4UIcmdWithADoubleAndUnit* MinRecoilEnergyCmd;
+  G4UIcmdWithADoubleAndUnit* MaxRecoilEnergyCmd;
   G4UIcmdWith3VectorAndUnit* VertexVectorCmd;
   G4UIcmdWithADoubleAndUnit* VertexEnergyCmd;
 

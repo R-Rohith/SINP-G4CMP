@@ -23,6 +23,7 @@ SMSteppingAction::~SMSteppingAction(){}
 void SMSteppingAction::UserSteppingAction(const G4Step* step) 
 {
  if(std::abs(step->GetTrack()->GetDefinition()->GetPDGEncoding())!=SMConfigManager::GetPrimPartPDG())return;
+ if(step->GetTrack()->GetGlobalTime()>10*s) step->GetTrack()->SetTrackStatus(fStopAndKill);
  G4double edep = step->GetTotalEnergyDeposit()/eV;
 // G4ThreeVector pos = step->GetPreStepPoint()->GetPosition();
  const std::vector<const G4Track*>* secondaries = step->GetSecondaryInCurrentStep();

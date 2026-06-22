@@ -49,6 +49,7 @@ SMPrimaryGeneratorAction::~SMPrimaryGeneratorAction()
 }
 void SMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 
+	event->SetEventID(SMConfigManager::GetCustomEventID()+event->GetEventID());
     G4ParticleDefinition *partType;
   G4ThreeVector pos, dir;
   G4double E, theta, phi;
@@ -73,14 +74,13 @@ void SMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   dir[2]=std::cos(theta);
   }
   else if(strcmp(SMConfigManager::GetPrimPartType(),"neutron")==0)  //--Neutron as primary-------
-  {std::cout<<SMConfigManager::GetPrimPartType()<<std::endl;
+  {
   if(G4UniformRand()<0.5)
    partType=G4AntiNeutron::Definition();
   else
    partType=G4Neutron::Definition();
   
 
-  G4ThreeVector pos, dir;
   G4double r=4*cm,phiPos=2*CLHEP::pi*G4UniformRand(),thetaPos=CLHEP::pi*G4UniformRand();	
   pos[0]=r*std::sin(thetaPos)*std::cos(phiPos);
   pos[1]=r*std::sin(thetaPos)*std::sin(phiPos);
@@ -147,7 +147,6 @@ void SMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   fParticleGun->SetParticleDefinition(partType);
   fParticleGun->GeneratePrimaryVertex(event);
 
-  std::cout<<event->GetEventID()<<std::endl;
 //  G4ThreeVector pos=fParticleGun->GetParticlePosition(), mom=fParticleGun->GetParticleMomentumDirection();
 //  G4double E=fParticleGun->GetParticleEnergy(), theta=std::acos(mom[2]/mom.mag()), phi=(mom[1]<0)?2*CLHEP::pi-std::acos(mom[0]/std::sqrt(mom[0]*mom[0]+mom[1]*mom[1])):std::acos(mom[0]/std::sqrt(mom[0]*mom[0]+mom[1]*mom[1]));
 }

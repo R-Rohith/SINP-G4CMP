@@ -30,7 +30,7 @@ SMConfigManager* SMConfigManager::Instance() {
 
 SMConfigManager::SMConfigManager()
   : Hit_file(getenv("G4CMP_HIT_FILE")?getenv("G4CMP_HIT_FILE"):"phonon_hits.txt"),
-    messenger(new SMConfigMessenger(this)), PrimPartType("gamma"), PrimPartEnergy(1*MeV), PrimPartFluxFilename("empty") {;}
+    messenger(new SMConfigMessenger(this)), CustomEventID(getenv("G4_USERCONFIG_CUSTOMEVENTID")?atoi(getenv("G4_USERCONFIG_CUSTOMEVENTID")):0), PrimPartType("gamma"), PrimPartEnergy(1*MeV), PrimPartFluxFilename("empty") {;}
 
 SMConfigManager::~SMConfigManager() {
   delete messenger; messenger=0;

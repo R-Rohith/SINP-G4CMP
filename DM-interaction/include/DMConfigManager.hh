@@ -33,8 +33,22 @@ public:
   // Change values (e.g., via Messenger)
   static void SetHitOutput(const G4String& name)
     { Instance()->Hit_file=name; UpdateGeometry(); }
-
-//------For Abhikamya---------    
+  static const G4int GetCustomEventID()
+  {
+          return Instance()->CustomEventID;
+  } 
+  static const G4bool GetCustomEdepFlag()
+  {
+	  return Instance()->CustomEdepFlag;
+  }
+  static const G4double GetMinRecoilEnergy()
+  {
+	  return Instance()->MinRecoilEnergy;
+  }
+  static const G4double GetMaxRecoilEnergy()
+  {
+	  return Instance()->MaxRecoilEnergy;
+  }
   static const G4ThreeVector GetVertexVector()
   {
     return Instance()->VertexVector;
@@ -42,6 +56,22 @@ public:
   static const G4double GetVertexEnergy()
   {
     return Instance()->VertexEnergy;
+  }
+  static void SetCustomEventID(const G4int& value)
+  {
+          Instance()->CustomEventID=value;
+  }
+  static void SetCustomEdepFlag(G4bool flag)
+  {
+	  Instance()->CustomEdepFlag=flag;
+  }
+  static void SetMinRecoilEnergy(G4double Emin)
+  {
+	  Instance()->MinRecoilEnergy=Emin;
+  }
+  static void SetMaxRecoilEnergy(G4double Emax)
+  {
+	  Instance()->MaxRecoilEnergy=Emax;
   }
   static void SetVertexVector(G4ThreeVector pos)
   {
@@ -66,7 +96,9 @@ private:
 
 private:
   G4String Hit_file;	// Output file of e/h hits ($G4CMP_HIT_FILE)
-
+  G4int CustomEventID;  // Starting point of event ID
+  G4bool CustomEdepFlag;  // Flag to toggle manual Edep simulations
+  G4double MinRecoilEnergy, MaxRecoilEnergy;
   G4ThreeVector VertexVector;
   G4double VertexEnergy;
 

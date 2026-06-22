@@ -16,12 +16,11 @@ void DMRunAction::BeginOfRunAction(const G4Run*) {
   ana->CreateNtupleIColumn("Nucleus_PID");
   ana->CreateNtupleDColumn("DM_mass");
   ana->CreateNtupleDColumn("DM_velocity");
-  ana->CreateNtupleDColumn("Initial_posx");
-  ana->CreateNtupleDColumn("Initial_posy");
-  ana->CreateNtupleDColumn("Initial_posz");
+  ana->CreateNtupleDColumn("Initial_posx_cm");
+  ana->CreateNtupleDColumn("Initial_posy_cm");
+  ana->CreateNtupleDColumn("Initial_posz_cm");
   ana->CreateNtupleDColumn("Recoil_theta");
-  ana->CreateNtupleDColumn("Recoil_Energy");
-  ana->CreateNtupleDColumn("NSec");
+  ana->CreateNtupleDColumn("Recoil_Energy_eV");
   ana->CreateNtupleDColumn("NPhononL");
   ana->CreateNtupleDColumn("NPhononTF");
   ana->CreateNtupleDColumn("NPhononTS");
@@ -32,20 +31,20 @@ void DMRunAction::BeginOfRunAction(const G4Run*) {
   ana->CreateNtupleIColumn("Event_ID");
   ana->CreateNtupleIColumn("Track_ID");
   ana->CreateNtupleSColumn("Particle_Name");
-  ana->CreateNtupleDColumn("Start_energy");
-  ana->CreateNtupleDColumn("Start_positionX");
-  ana->CreateNtupleDColumn("Start_positionY");
-  ana->CreateNtupleDColumn("Start_positionZ");
-  ana->CreateNtupleDColumn("Start_time");
-  ana->CreateNtupleDColumn("Deposited_energy");
-  ana->CreateNtupleIColumn("Track_weight");
-  ana->CreateNtupleDColumn("Final_positionX");
-  ana->CreateNtupleDColumn("Final_positionY");
-  ana->CreateNtupleDColumn("Final_positionZ");
-  ana->CreateNtupleDColumn("Final_time");
+  ana->CreateNtupleDColumn("Start_energy_eV");
+  ana->CreateNtupleDColumn("Start_positionX_cm");
+  ana->CreateNtupleDColumn("Start_positionY_cm");
+  ana->CreateNtupleDColumn("Start_positionZ_cm");
+  ana->CreateNtupleDColumn("Start_time_ns");
+  ana->CreateNtupleDColumn("Deposited_energy_eV");
+  ana->CreateNtupleDColumn("Weight");
+  ana->CreateNtupleDColumn("Final_positionX_cm");
+  ana->CreateNtupleDColumn("Final_positionY_cm");
+  ana->CreateNtupleDColumn("Final_positionZ_cm");
+  ana->CreateNtupleDColumn("Final_time_ns");
   ana->FinishNtuple();
 
-  ana->OpenFile("Data_output");
+  ana->OpenFile("Simulation_output");
 }
 
 void DMRunAction::EndOfRunAction(const G4Run*) {

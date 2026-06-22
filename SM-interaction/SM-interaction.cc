@@ -56,10 +56,10 @@ int main(int argc,char** argv)
 #endif
 
  // Fixed Simulation                                                                           
-  G4long seed = 1234567890;
+//  G4long seed = 1234567890;
  
  // OR: Random seed based on time (non-reproducible)
-//  G4long seed = time(nullptr);
+  G4long seed = time(nullptr);
 
 
   CLHEP::HepRandom::setTheSeed(seed);

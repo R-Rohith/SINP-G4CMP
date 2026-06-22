@@ -22,7 +22,7 @@ long int Get_Event_Index(int, unsigned int*);
 
 //---Set the environment variables-----------------------------------
 
-unsigned long int NO_OF_EVENTS=1000;
+unsigned long int NO_OF_EVENTS_PER_RUN=1000;
 unsigned long int NO_OF_SIGNAL_PLOTS=10;
 unsigned long int NO_OF_SIGNALS_SAVED=100;
 double TIME_MAX=500;  // In ms
@@ -47,9 +47,9 @@ double SQUID_FB_INDUCTANCE;
 
 void Update_Environment_Variables()
 {
-	char *stopstr, *envVar=getenv("NO_OF_EVENTS");
-	if(envVar==NULL) cout<<"\"NO_OF_EVENTS\" is not set, using default value\n";
-	else NO_OF_EVENTS=atol(envVar);
+	char *stopstr, *envVar=getenv("NO_OF_EVENTS_PER_RUN");  // No of events in one file
+	if(envVar==NULL) cout<<"\"NO_OF_EVENTS_PER_RUN\" is not set, using default value\n";
+	else NO_OF_EVENTS_PER_RUN=atol(envVar);
 
 	envVar=getenv("NO_OF_SIGNAL_PLOTS");
 	if(envVar==NULL) cout<<"\"NO_OF_SIGNAL_PLOTS\" is not set, using default value\n";
@@ -133,17 +133,17 @@ void Update_Environment_Variables()
 }
 //-------------------------------------------------------------------
 
-unsigned int EventsRead=0;
+unsigned int EventsReadPerRun;
 long int Get_Event_Index(int EventID, unsigned int *EventIDArr)
 {
-	if(EventsRead>=NO_OF_EVENTS)return -1;
+	if(EventsReadPerRun>=NO_OF_EVENTS_PER_RUN)return -1;
 
 	unsigned int EveIndex=0;
-	for(;EveIndex<EventsRead;EveIndex++)
+	for(;EveIndex<EventsReadPerRun;EveIndex++)
 		if(EventIDArr[EveIndex]==EventID)
 			return EveIndex;
 	EventIDArr[EveIndex]=EventID;
-	EventsRead++;
+	EventsReadPerRun++;
 	return EveIndex;
 }
 
@@ -176,18 +176,14 @@ int extract_data()
 	for (int i=0;i<NO_OF_SIGNAL_PLOTS;i++)
 	{
 	Current_graph[i]= new TGraph();
-	Current_graph[i]->SetTitle("TES current vs time; Time (ms); Current (#muA)");
 	Temp_graph[i]= new TGraph();
-	Temp_graph[i]->SetTitle("Temperature of TES vs time; Time (ms); Temperature (mK)");
 	SQUID_out_graph[i]= new TGraph();
-	SQUID_out_graph[i]->SetTitle("Output of SQUID vs time; Time (ms); Voltage (V)");
 	}
 
 //---Open output filename and open a new TTree for storing TES temp, 
 //---current, and output voltage-------------------------------------
 
-	int EventCount=0;
-	int EventsWithEdep=0;
+	unsigned int EventCount=0, EventsWithEdep=0, GoodEveCount=0;
 	bool overflow=false,underflow=false;  // To indicate any data out of the selected time range 
 	long int overflow_counter=0, underflow_counter=0;
 
@@ -207,6 +203,7 @@ int extract_data()
 	rootfilelist.open("rootfilelist.txt");  // Contains list of .root data files 
 	while(rootfilelist>>rootfilename)
 	{
+		std::cout<<"Processing: "<<rootfilename<<std::endl;
 		TFile *fin=new TFile(rootfilename,"read");
 		TTree *perevent=(TTree*)fin->Get("Per_event_data");
 		int N=perevent->GetEntries();
@@ -215,27 +212,29 @@ int extract_data()
 		double W;
 
 		perevent->SetBranchAddress("Event_ID",&EventID);
-		perevent->SetBranchAddress("Deposited_energy",&depE); // In eV 
+		perevent->SetBranchAddress("Deposited_energy_eV",&depE);
 		perevent->SetBranchAddress("Weight",&W);
-		perevent->SetBranchAddress("Final_positionX",&posx);
-		perevent->SetBranchAddress("Final_positionY",&posy);
-//		perevent->SetBranchAddress("Final_positionZ",&posz);
-		perevent->SetBranchAddress("Final_time",&ftime);
+		perevent->SetBranchAddress("Final_positionX_cm",&posx);
+		perevent->SetBranchAddress("Final_positionY_cm",&posy);
+//		perevent->SetBranchAddress("Final_positionZ_cm",&posz);
+		perevent->SetBranchAddress("Final_time_ns",&ftime);
 
 		unsigned int EdepArr_sizeY=(TIME_MAX-TIME_MIN)/TIME_RESOLUTION;   //In ms
-		double *EdepArr[NO_OF_EVENTS];
-		for(int i=0;i<NO_OF_EVENTS;i++)
+		double *EdepArr[NO_OF_EVENTS_PER_RUN];
+		for(int i=0;i<NO_OF_EVENTS_PER_RUN;i++)
 			EdepArr[i]=new double[EdepArr_sizeY];
-		for(int i=0;i<NO_OF_EVENTS;i++)
+		for(int i=0;i<NO_OF_EVENTS_PER_RUN;i++)
 			for(int j=0;j<EdepArr_sizeY;j++)
 				EdepArr[i][j]=0;
-		double *EsumArr=new double[NO_OF_EVENTS];
-		for(int i=0;i<NO_OF_EVENTS;i++)EsumArr[i]=0;
-		unsigned int *HitCountArr=new unsigned int[NO_OF_EVENTS];
-		for(int i=0;i<NO_OF_EVENTS;i++)HitCountArr[i]=0;
-		unsigned int *EventIDArr=new unsigned int[NO_OF_EVENTS];
+		double *EsumArr=new double[NO_OF_EVENTS_PER_RUN];
+		for(int i=0;i<NO_OF_EVENTS_PER_RUN;i++)EsumArr[i]=0;
+		unsigned int *HitCountArr=new unsigned int[NO_OF_EVENTS_PER_RUN];
+		for(int i=0;i<NO_OF_EVENTS_PER_RUN;i++)HitCountArr[i]=0;
+		unsigned int *EventIDArr=new unsigned int[NO_OF_EVENTS_PER_RUN];
 		double knullD; // To store waste values
 		
+		EventsReadPerRun=0;
+
 		for(int i=0;i<N;i++)
 		{
 			perevent->GetEntry(i);
@@ -248,17 +247,25 @@ int extract_data()
 				long int EveIndex=Get_Event_Index(EventID,EventIDArr);
 				if(EveIndex<0) continue;
 				EdepArr[EveIndex][lround((ftime-TIME_MIN)/TIME_RESOLUTION)]+=depE*W;
-				TESxypos_hist->Fill(posx*100,posy*100,W);
+				TESxypos_hist->Fill(posx,posy,W);
 				HitCountArr[EveIndex]+=W;
 				EsumArr[EveIndex]+=depE*W;
 			}
 		}
-		for(unsigned int EveIndex=0;EveIndex<EventsRead;EveIndex++)  // Iterate through all the events that were read
+		for(unsigned int EveIndex=0;EveIndex<EventsReadPerRun;EveIndex++)  // Iterate through all the events that were read
 		{
 			TESdepE_hist->Fill(EsumArr[EveIndex]);
 			if(EsumArr[EveIndex]<=0)continue;
-			EventsWithEdep++;
-
+			if(GoodEveCount<NO_OF_SIGNAL_PLOTS)
+			{
+				char str[100];
+				sprintf(str,"TES current vs time (Edep=%.2lf KeV); Time (ms); Current (#muA)",EsumArr[EveIndex]*1e-3);  // eV to KeV
+				Current_graph[GoodEveCount]->SetTitle(str);
+				sprintf(str,"Temperature of TES vs time (Edep=%.2lf KeV); Time (ms); Temperature (mK)",EsumArr[EveIndex]*1e-3); // ev to KeV
+				Temp_graph[GoodEveCount]->SetTitle(str);
+				sprintf(str,"Output of SQUID vs time (Edep=%.2lf KeV); Time (ms); Voltage (V)",EsumArr[EveIndex]*1e-3);  // eV to KeV
+				SQUID_out_graph[GoodEveCount]->SetTitle(str);
+			}
 			current_temp=TES_OP_TEMP;
 			double highest_temp=TES_OP_TEMP;
 			current_I=I_BIAS*R_SHUNT/(R_SHUNT+R_PARASITIC+Get_Tungsten_Resistance_Simplified(current_temp));
@@ -270,31 +277,34 @@ int extract_data()
 			{
 				time=j*TIME_RESOLUTION+TIME_MIN;
 				Get_signal(EdepArr[EveIndex][j],time,current_temp,current_I,current_Vout);
-				if(EveIndex<NO_OF_SIGNAL_PLOTS)
+				if(GoodEveCount<NO_OF_SIGNAL_PLOTS)
 				{
-					Current_graph[EveIndex]->AddPoint(time,(current_I)*1e6); // In microAmps
-					Temp_graph[EveIndex]->AddPoint(time,current_temp*1e3); // In mK
-					SQUID_out_graph[EveIndex]->AddPoint(time,current_Vout);
+					Current_graph[GoodEveCount]->AddPoint(time,(current_I)*1e6); // In microAmps
+					Temp_graph[GoodEveCount]->AddPoint(time,current_temp*1e3); // In mK
+					SQUID_out_graph[GoodEveCount]->AddPoint(time,current_Vout);
 				}
 				if(highest_temp<current_temp)highest_temp=current_temp;
-				if(EveIndex<NO_OF_SIGNALS_SAVED)OutTree->Fill();
+				if(GoodEveCount<NO_OF_SIGNALS_SAVED)OutTree->Fill();
 			}
 //		        cout<<"Max possible temperature change for energy "<<EsumArr[EveIndex]<<" eV : "<<EsumArr[EveIndex]/(6.25e18*(1.008*TES_OP_TEMP+0.0346*TES_OP_TEMP*TES_OP_TEMP*TES_OP_TEMP)*1e-3*TMath::Pi()*2*2*2e-5*19/184)<<" K"<<endl;
 			Max_temp_hist->Fill(highest_temp*1e3);
 			hit_hist->Fill(HitCountArr[EveIndex]);
+			EventsWithEdep++;
+			GoodEveCount++;
 		}
+		EventCount+=EventsReadPerRun;
 
 		TTree *perrun=(TTree*)fin->Get("Per_run_data");
 		N=perrun->GetEntries();
 
 		perrun->SetBranchAddress("Event_ID",&EventID);
-		perrun->SetBranchAddress("Energy_dep",&depE);
-		perrun->SetBranchAddress("Initial_posx",&posx);
-		perrun->SetBranchAddress("Initial_posy",&posy);
-		perrun->SetBranchAddress("Initial_posz",&posz);
+		perrun->SetBranchAddress("Energy_dep_eV",&depE);
+		perrun->SetBranchAddress("Initial_posx_cm",&posx);
+		perrun->SetBranchAddress("Initial_posy_cm",&posy);
+		perrun->SetBranchAddress("Initial_posz_cm",&posz);
 
 		double InitialE, dirx,diry,dirz, theta,phi, Nsec,NPL,NPTF,NPTS;
-		perrun->SetBranchAddress("Initial_energy",&InitialE); // In MeV
+		perrun->SetBranchAddress("Initial_energy_MeV",&InitialE); 
 		perrun->SetBranchAddress("Initial_dirx",&dirx);
 		perrun->SetBranchAddress("Initial_diry",&diry);
 		perrun->SetBranchAddress("Initial_dirz",&dirz);
@@ -322,7 +332,7 @@ int extract_data()
 	}
 	rootfilelist.close();
         
-	cout<<"\nOut of "<<EventsRead<<" events, "<<EventsWithEdep<<" events has energy depositions\n";
+	cout<<"\nOut of "<<EventCount<<" events, "<<EventsWithEdep<<" events has energy depositions\n";
 	if(overflow)
 		cout<<"Please Increase TIME_MAX. There are "<<overflow_counter<<" hits beyond the current time interval\n";
 	if(underflow)

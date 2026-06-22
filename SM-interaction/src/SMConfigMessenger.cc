@@ -14,6 +14,8 @@
 #include "SMConfigMessenger.hh"
 #include "SMConfigManager.hh"
 #include "G4UIcmdWithAString.hh"
+#include "G4UIcmdWithAnInteger.hh"
+#include "G4UIcmdWithADoubleAndUnit.hh"
 
 
 // Constructor and destructor
@@ -21,8 +23,12 @@
 SMConfigMessenger::SMConfigMessenger(SMConfigManager* mgr)
   : G4UImessenger("/userconfig/", "User configuration for G4CMP phonon example"),
     theManager(mgr), hitsCmd(0) {
+
   hitsCmd = CreateCommand<G4UIcmdWithAString>("HitsFile",
 			      "Set filename for output of phonon hit locations");
+//  CustomEventIDCmd=new G4UIcmdWithAnInteger("/userconfig/CustomEventID",this);
+//  CustomEventIDCmd->SetGuidance("Set a custom starting point for the event IDs of this simulation");
+  CustomEventIDCmd=CreateCommand<G4UIcmdWithAnInteger>("CustomEventID","Set a custom starting point for the event IDs of this simulation");
   PrimPartTypeCmd=CreateCommand<G4UIcmdWithAString>("PrimPartType","Set the primary particle type: (muon, neutron, gamma)");
   PrimPartEnergyCmd=CreateCommand<G4UIcmdWithADoubleAndUnit>("PrimPartEnergy","Set the primary particle Energy");
   PrimPartFluxFilenameCmd=CreateCommand<G4UIcmdWithAString>("PrimPartFluxFilename","Set the primary particle distribution filename. Must be a root file.");
@@ -33,6 +39,7 @@ SMConfigMessenger::SMConfigMessenger(SMConfigManager* mgr)
 
 SMConfigMessenger::~SMConfigMessenger() {
   delete hitsCmd; hitsCmd=0;
+  delete CustomEventIDCmd; CustomEventIDCmd=0;
   delete PrimPartTypeCmd; PrimPartTypeCmd=0;
   delete PrimPartEnergyCmd; PrimPartEnergyCmd=0;
   delete PrimPartFluxFilenameCmd; PrimPartFluxFilenameCmd=0;
@@ -44,6 +51,7 @@ SMConfigMessenger::~SMConfigMessenger() {
 
 void SMConfigMessenger::SetNewValue(G4UIcommand* cmd, G4String value) {
   if (cmd == hitsCmd) theManager->SetHitOutput(value);
+  else if (cmd == CustomEventIDCmd) theManager->SetCustomEventID(CustomEventIDCmd->GetNewIntValue(value));
   else if (cmd == PrimPartTypeCmd) theManager->SetPrimPartType(value);
   else if (cmd == PrimPartEnergyCmd) theManager->SetPrimPartEnergy(PrimPartEnergyCmd->GetNewDoubleValue(value));
   else if (cmd == PrimPartFluxFilenameCmd) theManager->SetPrimPartFluxFilename(value);

@@ -32,6 +32,10 @@ public:
 
   // Access current values
   static const G4String& GetHitOutput()  { return Instance()->Hit_file; }
+  static const G4int GetCustomEventID()
+  {
+	  return Instance()->CustomEventID;
+  }
   static const G4String& GetPrimPartType()
   {
     return Instance()->PrimPartType;
@@ -65,14 +69,18 @@ public:
   // Change values (e.g., via Messenger)
   static void SetHitOutput(const G4String& name)
     { Instance()->Hit_file=name; /*UpdateGeometry();*/ }
+  static void SetCustomEventID(const G4int& value)
+  {
+	  Instance()->CustomEventID=value;
+  }
   static void SetPrimPartType(const G4String& value)
   {
     Instance()->PrimPartType=value;// UpdateGeometry();
   }
 
-  static void SetPrimPartEnergy(const G4String& value)
+  static void SetPrimPartEnergy(const G4double& value)
   {
-	  Instance()->PrimPartEnergy=std::stod(value);// UpdateGeometry();
+	  Instance()->PrimPartEnergy=value;// UpdateGeometry();
   }
 
   static void SetPrimPartFluxFilename(const G4String& value)
@@ -98,6 +106,7 @@ private:
 
 private:
   G4String Hit_file;	// Output file of e/h hits ($G4CMP_HIT_FILE)
+  G4int CustomEventID;  // Starting point of event ID
   G4String PrimPartType;  // Primary particle type
   G4double PrimPartEnergy;  // Primary particle energy
   G4String PrimPartFluxFilename;  // Name of file containing primary particle flux distribution

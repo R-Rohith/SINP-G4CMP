@@ -90,6 +90,7 @@ set(NEEDED_FILES
   run.mac
   extract_data.C
   Multirun.sh
+  Set_env.sh
   #  vis.mac
   )
 

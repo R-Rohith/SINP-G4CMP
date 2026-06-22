@@ -11,8 +11,12 @@
 # G4CMP production toggles (your C++ primary does the generation)
 /g4cmp/producePhonons 1
 /g4cmp/produceCharges 0
-/g4cmp/samplingEnergy 4 eV
+/g4cmp/samplingEnergy 0.011 eV
+
+/userconfig/CustomEdepFlag false
+/userconfig/MinRecoilEnergy 0 eV
+/userconfig/MaxRecoilEnergy 300 eV
 
 /run/initialize
 #/run/printProgress 100
-/run/beamOn 10000
+/run/beamOn 50000

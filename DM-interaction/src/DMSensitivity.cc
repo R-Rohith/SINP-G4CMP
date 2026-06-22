@@ -61,15 +61,15 @@ void DMSensitivity::EndOfEvent(G4HCofThisEvent* HCE) {
         Ana->FillNtupleIColumn(1,2,hit->GetTrackID());
         Ana->FillNtupleSColumn(1,3,hit->GetParticleName());
         Ana->FillNtupleDColumn(1,4,hit->GetStartEnergy()/eV);
-        Ana->FillNtupleDColumn(1,5,hit->GetStartPosition().getX()/m);
-        Ana->FillNtupleDColumn(1,6,hit->GetStartPosition().getY()/m);
-        Ana->FillNtupleDColumn(1,7,hit->GetStartPosition().getZ()/m);
+        Ana->FillNtupleDColumn(1,5,hit->GetStartPosition().getX()/cm);
+        Ana->FillNtupleDColumn(1,6,hit->GetStartPosition().getY()/cm);
+        Ana->FillNtupleDColumn(1,7,hit->GetStartPosition().getZ()/cm);
         Ana->FillNtupleDColumn(1,8,hit->GetStartTime()/ns);
         Ana->FillNtupleDColumn(1,9,hit->GetEnergyDeposit()/eV);
-        Ana->FillNtupleIColumn(1,10,hit->GetWeight());
-        Ana->FillNtupleDColumn(1,11,hit->GetFinalPosition().getX()/m);
-        Ana->FillNtupleDColumn(1,12,hit->GetFinalPosition().getY()/m);
-        Ana->FillNtupleDColumn(1,13,hit->GetFinalPosition().getZ()/m);
+        Ana->FillNtupleDColumn(1,10,hit->GetWeight());
+        Ana->FillNtupleDColumn(1,11,hit->GetFinalPosition().getX()/cm);
+        Ana->FillNtupleDColumn(1,12,hit->GetFinalPosition().getY()/cm);
+        Ana->FillNtupleDColumn(1,13,hit->GetFinalPosition().getZ()/cm);
         Ana->FillNtupleDColumn(1,14,hit->GetFinalTime()/ns);
         Ana->AddNtupleRow(1);
     }

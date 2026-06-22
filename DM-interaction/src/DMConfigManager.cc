@@ -30,7 +30,7 @@ DMConfigManager* DMConfigManager::Instance() {
   return theInstance;
 }
 
-DMConfigManager::DMConfigManager():VertexVector(G4ThreeVector(0,0,0)),VertexEnergy(0.011*eV),messenger(new DMConfigMessenger(this)){;}
+DMConfigManager::DMConfigManager():CustomEdepFlag(false),MinRecoilEnergy(0),MaxRecoilEnergy(1*keV), CustomEventID(getenv("G4_USERCONFIG_CUSTOMEVENTID")?atoi(getenv("G4_USERCONFIG_CUSTOMEVENTID")):0), VertexVector(G4ThreeVector(0,0,0)),VertexEnergy(0.011*eV),messenger(new DMConfigMessenger(this)){;}
 //  : Hit_file(getenv("G4CMP_HIT_FILE")?getenv("G4CMP_HIT_FILE"):"phonon_hits.txt"),
 //    messenger(new DMConfigMessenger(this)) {;}
 

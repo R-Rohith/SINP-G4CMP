@@ -19,5 +19,6 @@ private:
 
   // Position sampling (uniform in cylinder R=2 cm, H=4 cm, centered)
   G4ThreeVector SampleEventVertex() const;
-  std::ofstream fout;
+  G4bool CustomEdepFlag;
+  G4double Emin, Emax;
 };
