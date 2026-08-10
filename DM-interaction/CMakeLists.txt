@@ -84,7 +84,6 @@ install(TARGETS DM-interaction DESTINATION bin)
 set(NEEDED_FILES
   run.mac
   extract_data.C
-  extract_plots.C
   Multirun.sh
   Set_env.sh
   #  vis.mac

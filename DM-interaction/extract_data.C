@@ -24,6 +24,8 @@ long int Get_Event_Index(int, unsigned int*);
 
 unsigned long int NO_OF_EVENTS_PER_RUN=1000;
 unsigned long int NO_OF_SIGNAL_PLOTS=10;
+double BEST_SIGNAL_PLOT_CUTOFF=140;  // In eV
+double WORST_SIGNAL_PLOT_CUTOFF=50;  // In eV
 unsigned long int NO_OF_SIGNALS_SAVED=100;
 double TIME_MAX=500;  // In ms
 double TIME_MIN=-10;  // In ms
@@ -54,6 +56,14 @@ void Update_Environment_Variables()
 	envVar=getenv("NO_OF_SIGNAL_PLOTS");
 	if(envVar==NULL) cout<<"\"NO_OF_SIGNAL_PLOTS\" is not set, using default value\n";
 	else NO_OF_SIGNAL_PLOTS=atol(envVar);
+
+	envVar=getenv("BEST_SIGNAL_PLOT_CUTOFF");
+	if(envVar==NULL) cout<<"\"BEST_SIGNAL_PLOT_CUTOFF\" is not set, using default value\n";
+	else BEST_SIGNAL_PLOT_CUTOFF=strtod(envVar,&stopstr);
+
+	envVar=getenv("WORST_SIGNAL_PLOT_CUTOFF");
+	if(envVar==NULL) cout<<"\"WORST_SIGNAL_PLOT_CUTOFF\" is not set, using default value\n";
+	else WORST_SIGNAL_PLOT_CUTOFF=strtod(envVar,&stopstr);
 
 	envVar=getenv("NO_OF_SIGNALS_SAVED");
 	if(envVar==NULL) cout<<"\"NO_OF_SIGNALS_SAVED\" is not set, using default value\n";
@@ -172,18 +182,21 @@ int extract_data()
 	TH2D *E_vs_t=new TH2D("","Energy deposited at TES vs time; Time (ms); Energy (eV)",100,0,10,100,0,20000);
 
 	TH1D *Max_temp_hist=new TH1D("","Max temperature in a event;Temperature change (nK)",100,0,0);
-	TGraph *Temp_graph[NO_OF_SIGNAL_PLOTS], *Current_graph[NO_OF_SIGNAL_PLOTS], *SQUID_out_graph[NO_OF_SIGNAL_PLOTS];
-	for (int i=0;i<NO_OF_SIGNAL_PLOTS;i++)
+	TGraph *Temp_graph[2*NO_OF_SIGNAL_PLOTS], *Current_graph[2*NO_OF_SIGNAL_PLOTS], *SQUID_out_graph[2*NO_OF_SIGNAL_PLOTS];
+	for (int i=0;i<2*NO_OF_SIGNAL_PLOTS;i++)
 	{
 	Current_graph[i]= new TGraph();
 	Temp_graph[i]= new TGraph();
 	SQUID_out_graph[i]= new TGraph();
 	}
 
+	TH2D *signal_shape_hist_PN=new TH2D("","Peak normalised signal histogram; Time (ms); Normalized amplitude",(int)(TIME_MAX-TIME_MIN)/TIME_RESOLUTION,TIME_MIN,TIME_MAX,300,0,1);
+        TH2D *signal_shape_hist_AN=new TH2D("","Area normalised signal histogram; Time (ms); Normalized amplitude",(int)(TIME_MAX-TIME_MIN)/TIME_RESOLUTION,TIME_MIN,TIME_MAX,300,0,0.007);
+
 //---Open output filename and open a new TTree for storing TES temp, 
 //---current, and output voltage-------------------------------------
 
-	unsigned int EventCount=0, EventsWithEdep=0, GoodEveCount=0;
+	unsigned int EventCount=0, EventsWithEdep=0, GoodEveCount=0, Best_signalplot_count=0, Worst_signalplot_count=0;
 	bool overflow=false,underflow=false;  // To indicate any data out of the selected time range 
 	long int overflow_counter=0, underflow_counter=0;
 
@@ -256,41 +269,69 @@ int extract_data()
 		{
 			TESdepE_hist->Fill(EsumArr[EveIndex]);
 			if(EsumArr[EveIndex]<=0)continue;
-			if(GoodEveCount<NO_OF_SIGNAL_PLOTS)
-			{
-				char str[100];
-				sprintf(str,"TES current vs time (Edep=%.2lf eV); Time (ms); Current change (pA)",EsumArr[EveIndex]);  // eV 
-				Current_graph[GoodEveCount]->SetTitle(str);
-				sprintf(str,"Temperature of TES vs time (Edep=%.2lf eV); Time (ms); Temperature change (nK)",EsumArr[EveIndex]); // ev
-				Temp_graph[GoodEveCount]->SetTitle(str);
-				sprintf(str,"Output of SQUID vs time (Edep=%.2lf eV); Time (ms); Voltage change (#muV)",EsumArr[EveIndex]);  // eV
-				SQUID_out_graph[GoodEveCount]->SetTitle(str);
-			}
+			bool Plot_signal=false;
+			unsigned int Index_signalplot;
+			if(Best_signalplot_count<NO_OF_SIGNAL_PLOTS)
+				if(EsumArr[EveIndex]>BEST_SIGNAL_PLOT_CUTOFF)
+				{
+					Plot_signal=true;
+					Index_signalplot=Best_signalplot_count;
+					Best_signalplot_count++;
+				}
+			if(Worst_signalplot_count<NO_OF_SIGNAL_PLOTS)
+				if(EsumArr[EveIndex]<WORST_SIGNAL_PLOT_CUTOFF)
+				{
+					Plot_signal=true;
+                                        Index_signalplot=NO_OF_SIGNAL_PLOTS+Worst_signalplot_count;
+                                        Worst_signalplot_count++;
+				}
+
 			current_temp=TES_OP_TEMP;
 			double highest_temp=TES_OP_TEMP;
 			current_I=I_BIAS*R_SHUNT/(R_SHUNT+R_PARASITIC+Get_Tungsten_Resistance_Simplified(current_temp));
 			const double initial_I=current_I;
 			current_Vout=SQUID_FB_VOLTAGE;
 			EventID=EventIDArr[EveIndex];
+			double signal_amplitude[EdepArr_sizeY];
+                        double signal_amplitude_normFactor_PeakNormalisation=0, signal_amplitude_normFactor_AreaNormalisation=0;
 
 			for(unsigned long int j=0;j<EdepArr_sizeY;j++)
 			{
 				time=j*TIME_RESOLUTION+TIME_MIN;
 				Get_signal(EdepArr[EveIndex][j],time,current_temp,current_I,current_Vout);
-				if(GoodEveCount<NO_OF_SIGNAL_PLOTS)
+				signal_amplitude[j]=current_Vout-SQUID_FB_VOLTAGE;
+                                if(signal_amplitude_normFactor_PeakNormalisation<signal_amplitude[j]) signal_amplitude_normFactor_PeakNormalisation=signal_amplitude[j];
+                                signal_amplitude_normFactor_AreaNormalisation+=signal_amplitude[j]*TIME_RESOLUTION;
+				if(Plot_signal)
 				{
-					Current_graph[GoodEveCount]->AddPoint(time,(current_I-initial_I)*1e12); // In pA
-					Temp_graph[GoodEveCount]->AddPoint(time,(current_temp-TES_OP_TEMP)*1e9); // In nK
-					SQUID_out_graph[GoodEveCount]->AddPoint(time,(current_Vout-SQUID_FB_VOLTAGE)*1e6); // In muV
+					Current_graph[Index_signalplot]->AddPoint(time,(current_I-initial_I)*1e12); // In pA
+					Temp_graph[Index_signalplot]->AddPoint(time,(current_temp-TES_OP_TEMP)*1e9); // In nK
+					SQUID_out_graph[Index_signalplot]->AddPoint(time,(current_Vout-SQUID_FB_VOLTAGE)*1e6); // In muV
 				}
 				if(highest_temp<current_temp)highest_temp=current_temp;
 				if(GoodEveCount<NO_OF_SIGNALS_SAVED)OutTree->Fill();
+			}
+			if(Plot_signal)
+			{
+				char str[100];
+				sprintf(str,"TES current vs time (Edep=%.2lf eV); Time (ms); Current change (pA)",EsumArr[EveIndex]);  // eV 
+				Current_graph[Index_signalplot]->SetTitle(str);
+				sprintf(str,"Temperature of TES vs time (Edep=%.2lf eV); Time (ms); Temperature change (nK)",EsumArr[EveIndex]); // ev
+				Temp_graph[Index_signalplot]->SetTitle(str);
+				sprintf(str,"Output of SQUID vs time (Edep=%.2lf eV); Time (ms); Voltage change (#muV)",EsumArr[EveIndex]);  // eV
+				SQUID_out_graph[Index_signalplot]->SetTitle(str);
 			}
 //		        cout<<"Max possible temperature change for energy "<<EsumArr[EveIndex]<<" eV : "<<EsumArr[EveIndex]/(6.25e18*(1.008*TES_OP_TEMP+0.0346*TES_OP_TEMP*TES_OP_TEMP*TES_OP_TEMP)*1e-3*TMath::Pi()*2*2*2e-5*19/184)<<" K"<<endl;
 			Max_temp_hist->Fill((highest_temp-TES_OP_TEMP)*1e9); // In nK
 			hit_hist->Fill(HitCountArr[EveIndex]);
 			EventsWithEdep++;
 			GoodEveCount++;
+			for(unsigned long int j=0;j<EdepArr_sizeY;j++)
+                        {
+                                time=j*TIME_RESOLUTION+TIME_MIN;
+                                signal_shape_hist_PN->Fill(time,signal_amplitude[j]/signal_amplitude_normFactor_PeakNormalisation);
+                                signal_shape_hist_AN->Fill(time,signal_amplitude[j]/signal_amplitude_normFactor_AreaNormalisation);
+                        }
 		}
 		EventCount+=EventsReadPerRun;
 
@@ -328,6 +369,11 @@ int extract_data()
 			initial_energy_hist->Fill(InitialE);
 			depE_hist->Fill(depE);
 		}
+		for(int i=0;i<NO_OF_EVENTS_PER_RUN;i++)
+                        delete[] EdepArr[i];
+		delete[] EsumArr;
+		delete[] HitCountArr;
+		delete[] EventIDArr;
 
 		fin->Close();
 	}
@@ -351,7 +397,7 @@ int extract_data()
 	fout->WriteObject(TESdepE_hist,"Deposited energy at TES");
 	fout->WriteObject(E_vs_t,"Energy vs Time");
 	fout->WriteObject(hit_hist,"No. of hits per event");
-	for(int i=0;i<NO_OF_SIGNAL_PLOTS;i++)
+	for(int i=0;i<2*NO_OF_SIGNAL_PLOTS;i++)
 	{
 		char str[50];
 		sprintf(str,"TES current vs time (graph %d)",i+1);
@@ -362,6 +408,8 @@ int extract_data()
 	fout->WriteObject(SQUID_out_graph[i],str);
 	}
 	fout->WriteObject(Max_temp_hist,"Max temp in event");
+	fout->WriteObject(signal_shape_hist_PN,"Peak normalised signal shape histogram");
+        fout->WriteObject(signal_shape_hist_AN,"Area normalised signal shape histogram");
 	fout->WriteObject(OutTree,"Signal data");
 
 	fout->Close();

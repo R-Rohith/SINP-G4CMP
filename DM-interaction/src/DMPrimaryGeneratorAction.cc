@@ -81,9 +81,9 @@ void DMPrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
 */
   long int no_of_sec=0,nL=0,nTF=0,nTS=0;
   for (int i=0; i<primaries.size(); i++)
-    if(primaries[i]->GetParticleDefinition()==G4PhononLong::Definition()) nL++;
-    else if (primaries[i]->GetParticleDefinition()==G4PhononTransFast::Definition()) nTF++;
-    else if (primaries[i]->GetParticleDefinition()==G4PhononTransSlow::Definition()) nTS++;
+    if(primaries[i]->GetParticleDefinition()==G4PhononLong::Definition()) nL+=primaries[i]->GetWeight();
+    else if (primaries[i]->GetParticleDefinition()==G4PhononTransFast::Definition()) nTF+=primaries[i]->GetWeight();
+    else if (primaries[i]->GetParticleDefinition()==G4PhononTransSlow::Definition()) nTS+=primaries[i]->GetWeight();
 
   G4AnalysisManager *ana = G4AnalysisManager::Instance();
   ana->FillNtupleIColumn(0,0,G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID());
